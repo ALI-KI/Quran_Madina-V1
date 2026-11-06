@@ -5,3 +5,12 @@ app/build/
 local.properties
 *.iml
 *.apk
+# Keep all signing private keys and secret files out of the public repository
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.key
+*.pem
+*.env
+.signing/

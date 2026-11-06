@@ -1,0 +1,10 @@
+{
+  "total_pages": 604,
+  "viewport": "390x844",
+  "layout_counts": {
+    "v06-unified-lines": 204
+  },
+  "issues": [],
+  "javascript_errors": [],
+  "limitations": "This does not validate verses against the official Madinah layout."
+}

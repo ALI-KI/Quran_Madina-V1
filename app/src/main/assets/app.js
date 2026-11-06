@@ -43,18 +43,26 @@ function decorateAyah(i, verse){const key=idFor(verse);const q=quarterStarts.get
 function maybeBismillah(firstV){if(firstV[1]===1&&firstV[0]!==1&&firstV[0]!==9)return '<div class="bismillah">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>';return ''}
 function renderMushaf(){
  if(state.readerMode==='flex')return renderFlex();
- const [lo,hi]=Q.pages[state.page-1];let html='';let prevSurah=0;
+ const [lo,hi]=Q.pages[state.page-1];let html='';let prevSurah=0;let sectionNo=0;
  for(let j=lo-1;j<hi;j++){
   const verse=valAt(j);
   if(verse[0]!==prevSurah){
    if(prevSurah)html+='</div></section>';
-   html+=`<section class="mushaf-section"><div class="page-top"><span>سورة ${esc(Q.names[verse[0]-1])}</span><span>الجزء ${ar(groupOf(j+1,Q.juz))}</span></div>`+maybeBismillah(verse)+`<div class="page-verse-text" data-start="${j}" data-end="${j}">`;
-   prevSurah=verse[0];
+   // A new surah halfway down a Quran page needs its OWN ordinary-flow heading.
+   // The former .page-top used a negative margin for every surah, overlaying the
+   // Quran text and producing giant blank spaces when the two sections were flexed.
+   const isFirst=sectionNo===0;
+   const label=`سورة ${esc(Q.names[verse[0]-1])}`;
+   const header=isFirst
+     ? `<div class="page-top"><span>${label}</span><span>الجزء ${ar(groupOf(j+1,Q.juz))}</span></div>`
+     : `<div class="surah-divider" role="heading" aria-level="2"><span>${label}</span></div>`;
+   html+=`<section class="mushaf-section${isFirst?' first-section':' later-section'}">${header}${maybeBismillah(verse)}<div class="page-verse-text" data-start="${j}" data-end="${hi-1}">`;
+   prevSurah=verse[0];sectionNo++;
   }
   html+=decorateAyah(j,verse);
  }
  html+='</div></section>';
- return `<article class="reader-border" aria-label="صفحة المصحف رقم ${state.page}"><div class="mushaf-edge left" aria-hidden="true"></div><div class="mushaf-edge right" aria-hidden="true"></div><div class="mushaf-sections">${html}</div><div class="page-number">${ar(state.page)}</div></article>`;
+ return `<article class="reader-border" aria-label="صفحة المصحف رقم ${state.page}"><div class="mushaf-edge left" aria-hidden="true"></div><div class="mushaf-edge right" aria-hidden="true"></div><div class="mushaf-sections" data-surah-count="${sectionNo}">${html}</div><div class="page-number">${ar(state.page)}</div></article>`;
 }
 function renderFlex(){let sur=currentSurah();let start=surahStart[sur-1],end=start+Q.counts[sur-1];let items=[];
  for(let i=start;i<end;i++){const v=valAt(i);let mark=bookmarks[idFor(v)]?'★':'';const qi=quarterStarts.get(i);const tag=qi===undefined?'':`<span class="quarter-badge" aria-label="${quarterName(qi)}">۞ ${quarterName(qi)}</span>`;items.push(`<button class="line-item" data-verse="${i}"><div class="num">الآية ${ar(v[1])} ${mark}</div>${tag}<div class="result-verse ayah-text ${(audioVisible||selectionVisible)&&activeIndex===i?'active':''}">${esc(v[2])}</div></button>`)}
@@ -152,82 +160,94 @@ function fitMushaf(){
  if(state.tab!=='mushaf'||state.readerMode!=='original')return;
  const main=$('mainArea'),reader=main.querySelector('.reader-border'),blocks=[...main.querySelectorAll('.page-verse-text')];
  if(!reader||!blocks.length)return;
- // Always reconstruct from immutable Quran data. Never re-tokenize a previous rendered line.
+ // The text is always reconstructed from the immutable data; never reflow or
+ // alter the Arabic text from a previously measured/justified HTML row.
  reader.classList.remove('fallback-lines');
  reader.removeAttribute('data-line-layout');
- const maxWidth=Math.max(0,blocks[0].clientWidth-8);
+ reader.style.removeProperty('--mq-line-pitch');
+ blocks.forEach(el=>{
+   el.classList.remove('fixed-lines');
+   el.style.removeProperty('height');el.style.removeProperty('font-size');el.style.removeProperty('line-height');
+ });
+ const maxWidth=Math.max(0,Math.min(...blocks.map(el=>el.clientWidth))-8);
  if(maxWidth<110)return;
- const bismillahCount=reader.querySelectorAll('.bismillah').length;
  const sectionCount=blocks.length;
  const tokensBlocks=blocks.map((el,i)=>{
    const lo=Number(el.dataset.start);
-   const hi=(i+1<sectionCount ? Number(blocks[i+1].dataset.start)-1 : Q.pages[state.page-1][1]-1);
+   const hi=(i+1<sectionCount?Number(blocks[i+1].dataset.start)-1:Q.pages[state.page-1][1]-1);
    return mushafTokens(lo,hi);
  });
  const totalTokens=tokensBlocks.flat();
- // The page's decorative header/footer and all chapter headings consume a real height budget.
  const contentBox=reader.querySelector('.mushaf-sections');
- const availableHeight=Math.max(135,contentBox.clientHeight - 9);
- const headerBudget=sectionCount*35+bismillahCount*47+10;
- const textHeight=Math.max(110,availableHeight-headerBudget);
- // For heavily packed pages, allow more reading rows than a sparse page. Exact Madinah
- // glyph-line matching requires authoritative line-number metadata; this is a safe fit engine.
- let arranged=null, chosenSize=0, chosenRows=0;
+ const availableHeight=contentBox.clientHeight;
+ // The first header is inside the top ornament; subsequent surah dividers,
+ // and each bismillah are in normal document flow with actual measured heights.
+ const fixedNodes=[...reader.querySelectorAll('.surah-divider,.bismillah')];
+ const fixedHeight=fixedNodes.reduce((sum,el)=>{
+   const st=getComputedStyle(el);
+   return sum+el.getBoundingClientRect().height+parseFloat(st.marginTop||0)+parseFloat(st.marginBottom||0);
+ },0)+9;
+ const textHeight=Math.max(0,availableHeight-fixedHeight);
+ let arranged=null,chosenSize=0,chosenRows=0;
  const preferred=Math.min(32,Math.max(18,state.fontSize));
- for(let font=preferred;font>=11.5;font-=0.5){
+ const weightsAt=font=>tokensBlocks.map(t=>{const z=buildLines(t,1,font);return z.sum+z.space*t.length});
+ for(let font=preferred;font>=12;font-=0.5){
+   const rowMin=font*1.48+2;
+   const possibleRows=Math.min(28,Math.floor(textHeight/rowMin));
+   if(possibleRows<sectionCount)continue;
    const m=buildLines(totalTokens,1,font);
-   const rowHeight=font*1.53+2;
-   const possibleRows=Math.max(sectionCount,Math.min(27,Math.floor(textHeight/rowHeight)));
-   const neededRows=Math.max(sectionCount,Math.ceil((m.sum+m.space*Math.max(0,totalTokens.length-1))/(maxWidth*0.87)));
+   const neededRows=Math.max(sectionCount,Math.ceil((m.sum+m.space*Math.max(0,totalTokens.length-sectionCount))/(maxWidth*.83)));
    if(neededRows>possibleRows)continue;
-   for(let rowCount=Math.max(sectionCount,neededRows);rowCount<=Math.min(possibleRows,neededRows+3);rowCount++){
-     // Allocate lines based on *measured widths*, not number of words; crucial for long ayahs.
-     const weight=tokensBlocks.map(t=>{const z=buildLines(t,1,font);return z.sum+z.space*t.length});
-     const all=weight.reduce((a,b)=>a+b,0);
-     const each=weight.map(x=>Math.max(1,Math.round(rowCount*x/all)));
-     while(each.reduce((a,b)=>a+b,0)>rowCount){
-       let at=-1,score=-1;each.forEach((n,i)=>{if(n>1&&(n-weight[i]*rowCount/all)>score){score=n-weight[i]*rowCount/all;at=i}});
-       if(at<0)break;each[at]--;
+   const weights=weightsAt(font),all=weights.reduce((a,b)=>a+b,0);
+   for(let rows=neededRows;rows<=Math.min(possibleRows,neededRows+4);rows++){
+     const counts=weights.map(w=>Math.max(1,Math.round(rows*w/(all||1))));
+     while(counts.reduce((a,b)=>a+b,0)>rows){
+       let at=-1,delta=-Infinity;
+       counts.forEach((n,i)=>{if(n>1){const d=n-weights[i]*rows/(all||1);if(d>delta){delta=d;at=i}}});
+       if(at<0)break;counts[at]--;
      }
-     while(each.reduce((a,b)=>a+b,0)<rowCount){
-       let at=0;for(let i=1;i<each.length;i++)if(weight[i]/each[i]>weight[at]/each[at])at=i;
-       each[at]++;
+     while(counts.reduce((a,b)=>a+b,0)<rows){
+       let at=0;for(let i=1;i<counts.length;i++)if(weights[i]/counts[i]>weights[at]/counts[at])at=i;
+       counts[at]++;
      }
-     const candidate=tokensBlocks.map((t,i)=>partitionLines(t,each[i],maxWidth,font));
-     if(candidate.every(Boolean)){
-       // Keep heading/bismillah readable; don't sacrifice vertical padding below frame.
-       arranged=candidate;chosenSize=font;chosenRows=rowCount;break;
-     }
+     const candidate=tokensBlocks.map((t,i)=>partitionLines(t,counts[i],maxWidth,font));
+     if(candidate.every(Boolean)){arranged=candidate;chosenSize=font;chosenRows=rows;break;}
    }
    if(arranged)break;
  }
- if(!arranged){
-   // Never cut off Qur'an text. Graceful, vertically scrolling rendering is preferable
-   // to an invalid/disappearing verse; label this distinctly for engineering QA.
+ const restoreSafe=()=>{
    reader.classList.add('fallback-lines');
-   blocks.forEach(el=>{el.classList.remove('fixed-lines');el.style.fontSize='19px';el.style.lineHeight='1.65'});
+   reader.style.removeProperty('--mq-line-pitch');
+   blocks.forEach((el,i)=>{
+     el.classList.remove('fixed-lines');el.style.removeProperty('height');
+     el.style.fontSize='19px';el.style.lineHeight='1.65';
+     const lo=Number(el.dataset.start),hi=i+1<sectionCount?Number(blocks[i+1].dataset.start)-1:Q.pages[state.page-1][1]-1;
+     el.innerHTML=Array.from({length:hi-lo+1},(_,k)=>decorateAyah(lo+k,valAt(lo+k))).join('');
+   });
    reader.dataset.lineLayout='scroll-safe';
-   return;
- }
+ };
+ if(!arranged){restoreSafe();return;}
+ const pitch=Math.max(chosenSize*1.48+2,Math.min(textHeight/chosenRows,chosenSize*2.0+6));
+ reader.style.setProperty('--mq-line-pitch',pitch+'px');
  blocks.forEach((el,i)=>{
    el.classList.add('fixed-lines');
    el.style.fontSize=chosenSize+'px';
+   el.style.height=(pitch*arranged[i].length)+'px';
    el.innerHTML=arranged[i].map(lineHtml).join('');
  });
- reader.dataset.lineLayout='v05-fitted';reader.dataset.lineCount=String(chosenRows);
- reader.dataset.fontSize=String(chosenSize);
- // If actual font rendering differs from the canvas metrics, do not allow clipping.
- const end=reader.getBoundingClientRect(), parts=[...reader.querySelectorAll('.mushaf-line')];
- const invalid=parts.some(l=>{const r=l.getBoundingClientRect();return l.scrollWidth>l.clientWidth+2 || r.right>end.right-5 || r.left<end.left+5 || r.bottom>end.bottom-22;});
- if(invalid){
-   // A verified fit is more important than forcing a textbook 15-line appearance.
-   reader.classList.add('fallback-lines');
-   blocks.forEach(el=>{el.classList.remove('fixed-lines');el.style.fontSize='19px';el.style.lineHeight='1.65'});
-   // Rebuild the original Quran verse spans so the original text remains readable.
-   blocks.forEach((el,i)=>{const lo=Number(el.dataset.start),hi=(i+1<sectionCount?Number(blocks[i+1].dataset.start)-1:Q.pages[state.page-1][1]-1);
-     el.innerHTML=Array.from({length:hi-lo+1},(_,k)=>decorateAyah(lo+k,valAt(lo+k))).join('');});
-   reader.dataset.lineLayout='scroll-safe';
- }
+ reader.dataset.lineLayout='v06-unified-lines';
+ reader.dataset.lineCount=String(chosenRows);reader.dataset.fontSize=String(chosenSize);
+ const bounds=reader.getBoundingClientRect(),lines=[...reader.querySelectorAll('.mushaf-line')];
+ const dividers=[...reader.querySelectorAll('.surah-divider')];
+ const wordOut=lines.some(line=>{
+   const r=line.getBoundingClientRect();
+   return line.scrollWidth>line.clientWidth+3||r.right>bounds.right-7||r.left<bounds.left+7||r.bottom>bounds.bottom-31;
+ });
+ const badDivider=dividers.some(el=>{
+   const r=el.getBoundingClientRect();
+   return lines.some(line=>{const l=line.getBoundingClientRect();return l.bottom>r.top+1&&l.top<r.bottom-1});
+ });
+ if(wordOut||badDivider){restoreSafe();}
 }
 
 function focusSelected(){
