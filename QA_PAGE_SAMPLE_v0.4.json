@@ -1,0 +1,152 @@
+[
+  {
+    "page": 1,
+    "lines": 8,
+    "expected": 7,
+    "markers": 7,
+    "normal": true,
+    "noHeightOverflow": true,
+    "topbar": "سُورَةُ الفاتحة",
+    "readerDiff": 0
+  },
+  {
+    "page": 2,
+    "lines": 9,
+    "expected": 5,
+    "markers": 5,
+    "normal": true,
+    "noHeightOverflow": true,
+    "topbar": "سُورَةُ البقرة",
+    "readerDiff": 0
+  },
+  {
+    "page": 3,
+    "lines": 15,
+    "expected": 11,
+    "markers": 11,
+    "normal": true,
+    "noHeightOverflow": true,
+    "topbar": "سُورَةُ البقرة",
+    "readerDiff": 0
+  },
+  {
+    "page": 8,
+    "lines": 15,
+    "expected": 9,
+    "markers": 9,
+    "normal": true,
+    "noHeightOverflow": true,
+    "topbar": "سُورَةُ البقرة",
+    "readerDiff": 0
+  },
+  {
+    "page": 9,
+    "lines": 15,
+    "expected": 4,
+    "markers": 4,
+    "normal": true,
+    "noHeightOverflow": true,
+    "topbar": "سُورَةُ البقرة",
+    "readerDiff": 0
+  },
+  {
+    "page": 15,
+    "lines": 15,
+    "expected": 8,
+    "markers": 8,
+    "normal": true,
+    "noHeightOverflow": true,
+    "topbar": "سُورَةُ البقرة",
+    "readerDiff": 0
+  },
+  {
+    "page": 35,
+    "lines": 15,
+    "expected": 5,
+    "markers": 5,
+    "normal": true,
+    "noHeightOverflow": true,
+    "topbar": "سُورَةُ البقرة",
+    "readerDiff": 0
+  },
+  {
+    "page": 55,
+    "lines": 15,
+    "expected": 8,
+    "markers": 8,
+    "normal": true,
+    "noHeightOverflow": true,
+    "topbar": "سُورَةُ آل عمران",
+    "readerDiff": 0
+  },
+  {
+    "page": 163,
+    "lines": 15,
+    "expected": 9,
+    "markers": 9,
+    "normal": true,
+    "noHeightOverflow": true,
+    "topbar": "سُورَةُ الأعراف",
+    "readerDiff": 0
+  },
+  {
+    "page": 300,
+    "lines": 15,
+    "expected": 8,
+    "markers": 8,
+    "normal": true,
+    "noHeightOverflow": true,
+    "topbar": "سُورَةُ الكهف",
+    "readerDiff": 0
+  },
+  {
+    "page": 432,
+    "lines": 15,
+    "expected": 8,
+    "markers": 8,
+    "normal": true,
+    "noHeightOverflow": true,
+    "topbar": "سُورَةُ سبأ",
+    "readerDiff": 0
+  },
+  {
+    "page": 570,
+    "lines": 0,
+    "expected": 15,
+    "markers": 0,
+    "normal": true,
+    "noHeightOverflow": true,
+    "topbar": "سُورَةُ المعارج",
+    "readerDiff": 0
+  },
+  {
+    "page": 602,
+    "lines": 0,
+    "expected": 14,
+    "markers": 0,
+    "normal": true,
+    "noHeightOverflow": true,
+    "topbar": "سُورَةُ قريش",
+    "readerDiff": 0
+  },
+  {
+    "page": 603,
+    "lines": 0,
+    "expected": 14,
+    "markers": 0,
+    "normal": true,
+    "noHeightOverflow": true,
+    "topbar": "سُورَةُ الكافرون",
+    "readerDiff": 0
+  },
+  {
+    "page": 604,
+    "lines": 0,
+    "expected": 15,
+    "markers": 0,
+    "normal": true,
+    "noHeightOverflow": true,
+    "topbar": "سُورَةُ الإخلاص",
+    "readerDiff": 0
+  }
+]

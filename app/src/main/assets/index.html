@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#f5e8d0"><meta name="description" content="مصحف المدينة الذكي — نموذج تطويري، تصميم وتطوير م. محمود الجمصي">
+<title>مصحف المدينة الذكي</title><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="app">
+  <header class="topbar">
+   <button class="icon-btn" data-action="menu" aria-label="القائمة"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+   <button class="icon-btn" data-action="search" aria-label="البحث"><svg viewBox="0 0 24 24"><circle cx="10.7" cy="10.7" r="6.2"/><path d="m15.5 15.5 5 5"/></svg></button>
+   <button class="icon-btn" data-action="quickBookmark" aria-label="علامة مرجعية"><svg viewBox="0 0 24 24"><path d="M6 3.5h12v17l-6-4.5-6 4.5z"/></svg></button>
+   <button class="icon-btn arrow" data-action="prevPage" aria-label="الصفحة السابقة">‹</button>
+   <button id="surahTitle" class="surah-control" data-action="surahPicker">سُورَةُ الْبَقَرَةِ</button>
+   <button class="icon-btn arrow" data-action="nextPage" aria-label="الصفحة التالية">›</button>
+   <div class="page-facts" id="pageFacts" title="بيانات الجزء والحزب والربع والصفحة"></div>
+  </header>
+  <main class="main-area" id="mainArea" aria-live="polite"><article class="reader-border"><div class="mushaf-edge left" aria-hidden="true"></div><div class="mushaf-edge right" aria-hidden="true"></div><div class="page-top"><span>سورة البقرة</span><span>الجزء ١</span></div><div class="bismillah">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div><div class="page-verse-text"><span class="ayah-text" data-verse="7">الٓمٓ</span><span class="ayah-no">١</span> <span class="ayah-text" data-verse="8">ذَٰلِكَ ٱلْكِتَـٰبُ لَا رَيْبَ ۛ فِيهِ ۛ هُدًى لِّلْمُتَّقِينَ</span><span class="ayah-no">٢</span> <span class="ayah-text" data-verse="9">ٱلَّذِينَ يُؤْمِنُونَ بِٱلْغَيْبِ وَيُقِيمُونَ ٱلصَّلَوٰةَ وَمِمَّا رَزَقْنَـٰهُمْ يُنفِقُونَ</span><span class="ayah-no">٣</span> <span class="ayah-text" data-verse="10">وَٱلَّذِينَ يُؤْمِنُونَ بِمَآ أُنزِلَ إِلَيْكَ وَمَآ أُنزِلَ مِن قَبْلِكَ وَبِٱلْءَاخِرَةِ هُمْ يُوقِنُونَ</span><span class="ayah-no">٤</span> <span class="ayah-text" data-verse="11">أُو۟لَـٰٓئِكَ عَلَىٰ هُدًى مِّن رَّبِّهِمْ ۖ وَأُو۟لَـٰٓئِكَ هُمُ ٱلْمُفْلِحُونَ</span><span class="ayah-no">٥</span> </div><div class="page-number">٢</div></article></main>
+  <section class="audio-bar" id="audioBar" hidden aria-label="مشغل التلاوة">
+    <div class="audio-row">
+      <button class="icon-btn player-collapse" data-action="closePlayer" aria-label="إغلاق مشغل التلاوة وإيقاف الصوت" title="إغلاق المشغل">×</button>
+      <button class="reciter" data-action="togglePlayer" aria-label="إظهار أو إخفاء تفاصيل مشغل التلاوة" title="إظهار التحكم المتقدم">محمد صديق المنشاوي <span class="player-chevron" aria-hidden="true">⌄</span></button>
+      <button class="control" data-action="prevAyah" aria-label="الآية السابقة">❮❮</button>
+      <button class="play-main" id="playButton" data-action="playAudio" aria-label="تشغيل">▶</button>
+      <button class="control" data-action="nextAyah" aria-label="الآية التالية">❯❯</button>
+      <button class="icon-btn mini" data-action="download" title="تنزيل السورة"><svg viewBox="0 0 24 24"><path d="M12 3v12m-4-4 4 4 4-4M4 17v3h16v-3"/></svg></button>
+    </div>
+    <div id="playerExpanded" class="player-expanded"><input id="audioSeek" type="range" min="0" max="100" value="0" aria-label="تقدم التلاوة"><div class="player-sub"><span id="elapsed">0:00</span><span id="currentAyahLabel">البقرة: ١</span><span id="duration">0:00</span><button class="tiny-action" data-action="speed">1×</button><button class="tiny-action" data-action="repeat">بدون تكرار</button></div></div>
+  </section>
+  <nav class="bottomnav" aria-label="أقسام التطبيق">
+   <button class="nav-item selected" data-tab="mushaf"><svg viewBox="0 0 24 24"><path d="M12 6c-3-3-7-3-10-2v15c4-1 8 0 10 3m0-16c3-3 7-3 10-2v15c-4-1-8 0-10 3M12 6v16"/></svg><span>المصحف</span></button>
+   <button class="nav-item" data-tab="index"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>الفهرس</span></button>
+   <button class="nav-item" data-tab="bookmarks"><svg viewBox="0 0 24 24"><path d="M6 3.5h12v17l-6-4.5-6 4.5z"/></svg><span>علاماتي</span></button>
+   <button class="nav-item" data-tab="progress"><svg viewBox="0 0 24 24"><path d="M4 20V12h4v8M10 20V4h4v16M16 20V8h4v12"/></svg><span>المتابعة</span></button>
+   <button class="nav-item" data-tab="settings"><svg viewBox="0 0 24 24"><path d="M12 2l2 2 3-.3.8 3 2.7 1.6-1.1 3.1 1.1 3.1-2.7 1.6-.8 3-3-.3-2 2-2-2-3 .3-.8-3-2.7-1.6 1.1-3.1-1.1-3.1 2.7-1.6.8-3 3 .3z"/><circle cx="12" cy="12" r="3"/></svg><span>الإعدادات</span></button>
+  </nav>
+  <div class="shade" id="shade" hidden></div><section id="drawer" class="drawer" aria-label="القائمة" hidden></section><section id="verseSheet" class="verse-sheet" hidden></section><div id="toast" class="toast" role="status" hidden></div>
+</div>
+<script src="quran-data.js"></script><script src="app.js"></script>
+</body></html>

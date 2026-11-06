@@ -1,0 +1,11 @@
+v0.4 developer verification — November 6, 2026
+
+PASS: Quran source data: 114 surahs, 6,236 ayah records, 604 page ranges. quran-data.js SHA256 unchanged vs v0.3.
+PASS: On 360/390/412px viewport sizes, page 8 shows aligned, non-clipped rows without horizontal overflow, with 9 verse ornaments.
+PASS: Verse ornaments remain adjacent to their final word in line-rendering mode.
+PASS: Audio bar hidden until Listen action; closing restores reading area.
+PASS: Bookmark functionality and navigation bar remain operational.
+PASS: Sampled 15 pages (1,2,3,8,9,15,35,55,163,300,432,570,602,603,604) at 390x844; no reader clipping or line overflows recorded.
+NOTE: 11 sampled pages used line layout; 4 dense multi-surah pages displayed intact with scrollable fallback.
+
+NOT YET VALIDATED: All 604 pages with verified official line breaks, official typesetting/publishing approval, independent proofing of Quran text and verse mapping, Android APK compilation and playback on real device. The current line layout is a legibility improvement, not a certified facsimile of the printed Madinah Mushaf.

@@ -1,0 +1,115 @@
+/* Madinah Quran | user-approved visual direction (2026-11-06).  UI ornaments are original assets,
+   Quran text and verse positions remain an unverified development preview, not a certified Madinah facsimile. */
+/* The preview uses locally available system Arabic fonts. A separately licensed Mushaf font may be supplied for release. */
+:root{--ivory:#fdf4e7;--paper:#fff9eb;--cream:#f5e6cd;--gold:#b98131;--gold2:#e2b96d;--brown:#4b2f1e;--darkgold:#93601e;--sage:#226e42;--green:#145633;--line:rgba(155,106,46,.25);--shadow:0 3px 12px rgba(74,44,20,.17);--ayahSize:31px}
+*{box-sizing:border-box}html,body{height:100%;margin:0}body{background:#e9d6ba;color:var(--brown);font-family:Tahoma,'Noto Naskh Arabic',Arial,sans-serif;direction:rtl}button,input,select{font:inherit}button{cursor:pointer;-webkit-tap-highlight-color:transparent}button:focus-visible,input:focus-visible{outline:2px solid #b28027;outline-offset:2px}[hidden]{display:none!important}
+.app{position:relative;height:100vh;height:100dvh;max-width:560px;margin:auto;overflow:hidden;display:flex;flex-direction:column;background:linear-gradient(135deg,rgba(255,248,232,.92),rgba(250,239,219,.94));box-shadow:0 0 30px #4f463455;isolation:isolate}
+.app:before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:.35;background-image:radial-gradient(#d3ae72 0.55px,transparent .7px),radial-gradient(#d3ae72 0.45px,transparent .7px);background-size:19px 19px,27px 27px;background-position:0 0,9px 12px}
+/* The complete header is one line. No oversized "Quran" banner. */
+.topbar{direction:ltr;flex:0 0 auto;min-height:69px;display:flex;align-items:center;gap:3px;margin:9px 7px 2px;padding:5px 6px;border:2px solid #bd8b3f;border-radius:25px 25px 17px 17px;background:linear-gradient(160deg,#fffaf1,#faedda 80%,#fff8ea);position:relative;box-shadow:0 1px 0 2px #fffaed inset,0 0 0 1px #f5dba4 inset,0 3px 8px #6f4b2020;z-index:3}
+.topbar:before,.topbar:after{position:absolute;content:'❖';top:50%;transform:translateY(-50%);font-size:18px;color:#b78234;background:#faf0de;z-index:1;line-height:1}.topbar:before{left:-10px}.topbar:after{right:-10px}
+.icon-btn{background:none;border:0;color:var(--brown);display:inline-flex;align-items:center;justify-content:center;min-width:30px;width:30px;height:38px;padding:5px;flex-shrink:0}.icon-btn svg,.nav-item svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.topbar .icon-btn{min-width:30px;width:30px}.topbar .arrow{font-family:Arial,sans-serif;font-size:31px;color:var(--darkgold);padding:0;width:15px;min-width:15px}.topbar [data-action='quickBookmark']{border-right:1px solid #e4cead}
+.surah-control{direction:rtl;flex:1 1 auto;min-width:88px;max-width:260px;align-self:stretch;border:2px solid #c59149;border-radius:21px 6px 21px 6px;background:linear-gradient(180deg,#fffaf0,#f8edd9);box-shadow:0 0 0 2px #fff9ed inset,0 0 0 3px #e7bc78 inset;white-space:nowrap;font: bold clamp(16px,4.5vw,23px)/1.65 'Amiri Quran','Amiri','Noto Naskh Arabic',serif;color:#251a13;padding:1px 4px;overflow:hidden;text-overflow:ellipsis;position:relative}
+.surah-control:before,.surah-control:after{position:absolute;top:48%;color:#b38a47;font-size:10px;transform:translateY(-50%);content:'✦'}.surah-control:before{left:1px}.surah-control:after{right:1px}
+.page-facts{direction:rtl;width:99px;min-width:99px;text-align:center;display:grid;grid-template-columns:1fr 1fr;column-gap:4px;row-gap:1px;border-left:1px solid #cfaa78;padding-left:4px;color:#60452b;font-size:10px;font-weight:bold;line-height:1.75}
+.page-facts span:nth-child(odd){border-left:1px solid #dfc18f}
+/* Reading window takes ALL the area saved in the header. */
+.main-area{min-height:0;flex:1 1 auto;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#c3a46a transparent;padding:8px 9px 5px}
+.reader-border{position:relative;min-height:100%;border:3px solid #165e39;background:linear-gradient(160deg,#fff9ea 0%,#fffbf0 52%,#fff5df 100%);padding:47px 36px 35px;border-radius:0;box-shadow:inset 0 0 0 2px #e8bd72,inset 0 0 0 5px #fff9ea,inset 0 0 0 6px #166441,0 2px 8px #6a431627;isolation:isolate}
+.reader-border:before,.reader-border:after{content:'';position:absolute;left:7px;right:7px;height:34px;background:url('approved-ornament-h.png') repeat-x center center;background-size:auto 34px;z-index:1;border-block:1px solid #286443}
+.reader-border:before{top:7px}.reader-border:after{bottom:7px}
+.mushaf-edge{position:absolute;top:7px;bottom:7px;width:27px;background:url('approved-ornament-v.png') repeat-y center center;background-size:27px auto;z-index:1;border-inline:1px solid #286443}
+.mushaf-edge.left{left:7px}.mushaf-edge.right{right:7px}
+.page-top{position:relative;margin:-39px -19px 26px;min-height:31px;display:flex;justify-content:space-between;align-items:center;gap:8px;z-index:2;pointer-events:none}.page-top span{font:15px/1.7 'Amiri Quran','Amiri','Noto Naskh Arabic',serif;padding:0 12px;border:1.5px solid var(--gold);border-radius:20px 4px 20px 4px;background:#fff7e7;color:#4d3220;box-shadow:inset 0 0 0 1px #fff,inset 0 0 0 3px #eecb91;max-width:45%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bismillah{text-align:center;font:clamp(22px,6vw,28px)/1.6 'Amiri Quran','Amiri','Noto Naskh Arabic',serif;margin:10px 0 16px;color:#171611}
+.page-verse-text{direction:rtl;text-align:justify;text-align-last:center;font:var(--ayahSize)/2.03 'Amiri Quran','Amiri','Noto Naskh Arabic',serif;color:#12110e;overflow-wrap:normal;word-break:normal;padding:0 1px 4px;min-height:90px}
+.ayah-text{cursor:pointer;border-radius:6px;transition:background .13s}.ayah-text:hover,.ayah-text.active{background:#dfb66c25}.ayah-text.marked{box-shadow:inset 0 -3px #d8a25188}
+.ayah-no{display:inline-flex;position:relative;vertical-align:middle;align-items:center;justify-content:center;width:34px;height:35px;margin:0 5px 0 4px;flex-shrink:0;border:2px solid #186341;outline:1.5px solid #b68135;outline-offset:-6px;border-radius:41% 41% 40% 40%;font:17px 'Amiri Quran','Amiri','Noto Naskh Arabic',serif;color:#291f12;background:radial-gradient(circle at center,#fffae9 0 57%,#f5deab 59%,#fff7e3 100%);box-shadow:0 0 0 1px #deb970;cursor:pointer}
+.ayah-no:after{position:absolute;content:'◆';top:-9px;color:#b27c29;font:10px Georgia}
+.page-number{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);width:74px;height:30px;margin:0;text-align:center;border-radius:48% 48% 24% 24%;border:2px solid var(--gold);background:#fff8e8;font:19px/1.25 'Amiri Quran','Amiri','Noto Naskh Arabic',serif;z-index:2;box-shadow:inset 0 0 0 2px #fff8ed}
+/* The user approved keeping the audio and lower navbar; keep both decorated. */
+.audio-bar{flex:0 0 auto;margin:4px 7px 6px;border:2px solid #c49453;border-radius:22px 22px 19px 19px;box-shadow:inset 0 0 0 2px #fff5e5,0 2px 7px #90632a2b;background:linear-gradient(150deg,#fffbf3,#f7e7d0);padding:5px 8px 5px;z-index:3;position:relative}
+.audio-bar:before,.audio-bar:after{content:'۞';color:#c9994c;font-size:19px;position:absolute;top:50%;transform:translateY(-50%);opacity:.55;pointer-events:none}.audio-bar:before{left:-7px}.audio-bar:after{right:-7px}
+.audio-row{direction:ltr;display:flex;align-items:center;gap:4px}.reciter{direction:rtl;text-align:center;font-size:11px;font-weight:bold;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#3c2616}.reciter small{display:none}.player-collapse{min-width:25px;width:25px}.control{border:0;background:none;color:#60432b;font-size:11px;padding:7px 2px}.play-main{display:flex;align-items:center;justify-content:center;width:39px;height:39px;flex-shrink:0;border-radius:50%;background:linear-gradient(150deg,#efc56d,#ba8026);color:white;border:1px solid #b77c26;box-shadow:inset 0 1px #fff4bd,0 2px 5px #63492340;font-size:17px}.mini{width:29px;min-width:29px;border:1px solid #e2c69a;border-radius:50%;height:29px}.mini svg{width:18px}.player-expanded{margin:5px 6px 0}.player-expanded input[type=range]{width:100%;accent-color:#b88a44;height:5px;margin:0;vertical-align:top}.player-sub{direction:ltr;display:flex;justify-content:space-between;align-items:center;font-size:10px;gap:5px}.tiny-action{border:1px solid #d1ad72;border-radius:11px;background:#fff9eb;font-size:10px;padding:2px 6px;color:#62452b}.audio-bar.collapsed .player-expanded{display:none}.audio-bar.collapsed{padding:4px 8px}
+.bottomnav{height:72px;flex:0 0 auto;display:flex;align-items:stretch;gap:1px;margin:0 5px 4px;background:linear-gradient(#fff7e9,#f3dfc1);border:2px solid #d5ad6d;border-radius:24px 24px 10px 10px;padding:4px 4px max(4px,env(safe-area-inset-bottom));box-shadow:inset 0 2px #fff,0 -2px 7px #e6c99d70;overflow:hidden}
+.nav-item{flex:1;min-width:0;background:none;border:0;display:flex;align-items:center;flex-direction:column;justify-content:center;gap:4px;color:#533620;font-size:11px;position:relative}.nav-item:not(:last-child):after{content:'✦';position:absolute;left:-5px;top:0;color:#cfa260;font-size:10px}.nav-item svg{width:23px;height:23px}.nav-item.selected{border-radius:15px 15px 10px 10px;background:linear-gradient(145deg,#ffe9bf,#f4d294);border:1px solid #cca062;color:#67411b;font-weight:bold;box-shadow:inset 0 1px white}
+/* Secondary screens */
+.content-page{padding:5px 6px 27px;max-width:480px;margin:auto}.title-pill{text-align:center;font:26px 'Amiri Quran','Amiri','Noto Naskh Arabic',serif;line-height:1.75;color:#613e21;margin:7px 0 12px;border-bottom:1px solid var(--line)}.hint{font-size:12px;color:#8e6c46;line-height:1.8;margin:5px 0 12px}.line-list{display:flex;flex-direction:column;gap:7px}.line-item{display:flex;gap:10px;align-items:center;width:100%;text-align:right;background:linear-gradient(110deg,#fffaf0,#f9ead4);border:1px solid #dcb982;border-radius:14px;padding:11px 12px;color:#4c2e19;box-shadow:0 2px 5px #5f44200a}.line-item strong{font-size:14px}.line-item small{font-size:11px;color:#896340}.line-item .num{border-radius:50%;min-width:31px;height:31px;display:grid;place-items:center;color:#815b27;border:1px solid #d4b47c;background:#fff8e9}.line-item .meta{display:flex;flex:1;flex-direction:column;gap:3px}.line-item .chevron{font-size:18px;color:#b28c55}.tabs{display:flex;gap:5px;margin:5px 0 12px}.tabs button{border:1px solid var(--gold2);padding:8px 10px;border-radius:12px;flex:1;background:#fff8ed;font-size:12px}.tabs button.active{background:#e4c691;font-weight:bold}.searchfield{display:block;width:100%;border:1px solid #d1a96d;border-radius:11px;padding:12px;background:#fffaf1;color:#533b26;outline:none;margin:8px 0 14px;font-size:15px}.result-verse{font:21px/1.8 'Amiri Quran','Amiri','Noto Naskh Arabic',serif;color:#332b24;display:block;direction:rtl}.flex-reader .line-item{flex-direction:column;align-items:stretch;gap:3px}.flex-reader .line-item .num{width:max-content;height:auto;border-radius:12px;padding:1px 8px;font-size:12px}.flex-reader .result-verse{font-size:var(--ayahSize);line-height:1.95}.badge-soft{font-size:10px;border:1px solid #dfbd85;color:#856037;background:#fff5e2;border-radius:10px;padding:3px 7px}.progress-card{border:1px solid #dfc094;border-radius:12px;background:#fff9eb;padding:15px;margin-bottom:10px}.large-stat{font-size:28px;font-weight:bold;color:#9b6a2d}.section-heading{font-size:15px;font-weight:bold;margin:16px 0 8px;color:#694421}.settings-row{display:flex;align-items:center;justify-content:space-between;padding:12px;border-bottom:1px solid #ecdcc3;gap:15px}.settings-row select,.settings-row input{accent-color:#a77531}.setting-button{background:#fff8ed;border:1px solid var(--gold);padding:9px 11px;border-radius:8px;color:#664225}.contact-card{border-radius:15px;background:linear-gradient(140deg,#f7ebd5,#fff8e9);border:1px solid #d4b178;text-align:center;padding:18px 14px}.contact-card h2{margin:3px 0;font-size:21px}.contact-card .en{font-size:12px;color:#9b7548}.contact-card a{display:block;color:#6b4729;text-decoration:none;direction:ltr;font-size:13px;margin:12px auto}.source-info{margin-top:20px;font-size:11px;color:#98734d;line-height:1.8}
+.shade{position:absolute;inset:0;background:#24200e73;z-index:8}.drawer{position:absolute;right:0;top:0;bottom:0;width:min(90%,390px);background:#f8ecda;z-index:9;box-shadow:-5px 0 20px #33271150;padding:15px;overflow-y:auto}.drawer-head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding:0 0 8px}.drawer-head h3{margin:0;font:24px 'Amiri Quran'}.verse-sheet{position:absolute;bottom:0;left:0;right:0;z-index:10;max-height:65%;overflow:auto;background:#f9ecd4;border:2px solid var(--gold);border-radius:20px 20px 0 0;padding:17px 16px 24px;box-shadow:0 -10px 35px #442d2155}.sheet-verse{font:25px/2 'Amiri Quran';color:#31261b;text-align:center;margin:12px 0}.verse-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.verse-actions button{background:#fff8e9;border:1px solid #d6b37b;border-radius:12px;padding:12px 6px;color:#644526}.toast{position:absolute;bottom:163px;left:20px;right:20px;z-index:12;text-align:center;background:#553b28f0;color:white;border-radius:12px;padding:10px;font-size:12px}
+.night{--ivory:#292824;--paper:#34332c;--brown:#f1e1c2;--line:#8d7d5c;--cream:#33302a}.night .app{background:#272620}.night .reader-border{background:#34332c}.night .page-verse-text,.night .bismillah{color:#f5ecd7}.night .topbar,.night .bottomnav,.night .audio-bar{background:#393127;color:#f4e1c5}.night .page-top span,.night .surah-control,.night .page-number{background:#42372c;color:#f6e4c0}.night .line-item,.night .tabs button,.night .progress-card,.night .setting-button,.night .contact-card{background:#39332a;color:#f5e6c7}.night .result-verse{color:#f5ead4}
+@media(max-width:390px){.topbar{gap:1px;margin-inline:5px;padding-inline:3px;min-height:61px}.topbar .icon-btn{width:25px;min-width:25px}.topbar .arrow{width:12px;min-width:12px}.page-facts{min-width:81px;width:81px;font-size:9px}.surah-control{font-size:15px;min-width:78px}.main-area{padding:7px 6px 4px}.reader-border{padding:45px 30px 34px}.mushaf-edge{width:23px;background-size:23px auto}.bismillah{font-size:23px}.page-verse-text{font-size:calc(var(--ayahSize) * .89);line-height:2.02}.ayah-no{height:31px;width:31px}.nav-item{font-size:10px}}
+@media(min-width:480px){.reader-border{padding-inline:42px}.page-verse-text{font-size:calc(var(--ayahSize) * 1.07)}}
+
+/* ===== v0.3: printed-Mushaf-inspired refinement ===== */
+:root{--ivory:#f9f4e8;--paper:#fffaf1;--cream:#f2e9d9;--gold:#ad843f;--gold2:#d3b77f;--brown:#483724;--darkgold:#8e6835;--green:#1d6741}
+.app{background:linear-gradient(160deg,#faf5e9,#f6ecdb 58%,#fbf5e9)}
+/* Keep the one-row app header. Delicate geometrical motif rather than a big branded banner. */
+.topbar{min-height:62px;margin:7px 7px 2px;padding:4px 5px;border-color:#b99252;border-width:1.5px;border-radius:20px 20px 13px 13px;background:linear-gradient(110deg,#fffaf0e8,#f9f1e5e8),url('header-motif.svg') repeat-x center;background-size:auto,auto 48px;box-shadow:inset 0 0 0 2px #fffbf2,inset 0 0 0 3px #ddbc83,0 2px 6px #795d3420}
+.topbar:before,.topbar:after{font-size:13px;color:#a77a36;background:#fbf2e5}
+.surah-control{border:1px solid #c8a264;border-radius:16px 5px 16px 5px;box-shadow:inset 0 0 0 2px #fff9ed,inset 0 0 0 3px #ddbd84;background:linear-gradient(#fffcf6,#f7edda)}
+.page-facts{color:#614d32}
+/* Crucial gain: slim ribbon ornament, not a 27px+ strip at either side. */
+.main-area{padding:6px 8px 4px}
+.reader-border{border:2px solid #276443;padding:34px 22px 29px;background:#fffaf0;box-shadow:inset 0 0 0 2px #d7ad69,inset 0 0 0 4px #fffaef,inset 0 0 0 5px #2b744b,0 1px 6px #61482317}
+.reader-border:before,.reader-border:after{height:21px;left:5px;right:5px;background-size:auto 21px;background-position:center;filter:saturate(.87) brightness(1.06);border-color:#b39a6c}
+.reader-border:before{top:5px}.reader-border:after{bottom:5px}
+.mushaf-edge{top:5px;bottom:5px;width:14px;background-size:14px auto;filter:saturate(.88) brightness(1.06);border-inline:1px solid #c69b5a}
+.mushaf-edge.left{left:5px}.mushaf-edge.right{right:5px}
+/* Print-style surah and juz heading sitting just inside the floral top ribbon. */
+.page-top{margin:-30px -14px 18px;min-height:25px;align-items:center;gap:4px}
+.page-top span{font:13px/1.5 'Amiri Quran','Amiri','Noto Naskh Arabic',serif;padding:1px 12px;border:1px solid #b68d50;border-radius:16px 3px 16px 3px;background:#fff9e8;box-shadow:inset 0 0 0 1px #fffdf6,inset 0 0 0 2px #dfc18a;color:#473424}
+.bismillah{margin:11px 0 13px;font-size:clamp(22px,6vw,28px);color:#181713}
+.page-verse-text{line-height:1.94;color:#191812;padding:0 1px 3px}
+/* Ornamental ayah medallions use a custom illuminated rosette SVG, numerals stay editable text. */
+.ayah-no{width:39px;height:39px;margin:0 4px 0 3px;vertical-align:middle;border:0;outline:0;border-radius:0;box-shadow:none;background:url('verse-medallion.svg') center/contain no-repeat;color:#382714;font:18px/1.1 'Amiri Quran','Amiri','Noto Naskh Arabic',serif;padding:0 1px 2px}
+.ayah-no:after{display:none}
+.page-number{bottom:7px;width:64px;height:25px;line-height:1.15;border:1px solid #b58e55;border-radius:48% 48% 28% 28%;background:#fff9ec;box-shadow:inset 0 0 0 2px #fff7e7;font-size:17px}
+/* The full-size player only exists while listening; closing it also stops audio. */
+.audio-bar{margin:4px 7px 6px}
+.audio-bar[hidden]{display:none!important}
+.player-collapse{font-size:22px;font-weight:400;color:#805c32}
+.bottomnav{background:linear-gradient(#fff8eb,#f1e1c7);border-color:#ccac79}
+.nav-item.selected{background:linear-gradient(145deg,#fff2d5,#eecb8e)}
+@media(max-width:390px){.topbar{min-height:58px}.main-area{padding:5px 6px 4px}.reader-border{padding:32px 20px 27px}.mushaf-edge{width:12px;background-size:12px auto}.reader-border:before,.reader-border:after{height:19px;background-size:auto 19px}.page-top{margin:-28px -13px 16px}.page-top span{font-size:12px;padding-inline:8px}.ayah-no{width:35px;height:35px;font-size:17px}}
+@media(min-width:480px){.reader-border{padding-inline:29px}.mushaf-edge{width:17px;background-size:17px auto}.reader-border:before,.reader-border:after{height:24px;background-size:auto 24px}}
+/* Browsers justify Quran words by inserting huge spaces; unlike an actual calligraphic Mushaf.
+   Until official per-line glyph positioning is available, keep the authentic text unwarped. */
+.page-verse-text{text-align:right;text-align-last:right;word-spacing:normal;letter-spacing:normal}
+
+/* Compact audio panel: expandable by tapping the reciter name. */
+.reciter{border:0;background:transparent;padding:5px 2px;cursor:pointer;color:#49301d}
+.player-chevron{display:inline-block;font-size:17px;line-height:1;vertical-align:middle;color:#956b36;margin-inline-start:2px;transition:transform .2s}
+.audio-bar:not(.collapsed) .player-chevron{transform:rotate(180deg)}
+.audio-bar.collapsed{padding:3px 7px;margin-bottom:5px;border-radius:17px}
+.audio-bar.collapsed .audio-row{min-height:41px}
+.audio-bar.collapsed .play-main{width:35px;height:35px}
+/* Fine Islamic tracery visible without creating an additional title or taller header. */
+.topbar{background-color:#fff8ea;background-image:linear-gradient(110deg,rgba(255,251,243,.75),rgba(248,238,221,.73)),url('header-motif.svg');background-repeat:no-repeat,repeat-x;background-size:cover,auto 48px;background-position:center}
+.page-top span:before,.page-top span:after{content:'◆';font-size:6px;vertical-align:middle;color:#b89a60;margin:0 3px}
+
+/* ===== v0.4: genuine full-width line alignment instead of ragged HTML wrapping ===== */
+@font-face{font-family:'Amiri Quran';src:url('AmiriQuran.ttf') format('truetype');font-style:normal;font-weight:400;font-display:swap}
+.reader-border{height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.mushaf-sections{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;position:relative;z-index:2}
+.mushaf-section{display:flex;flex-direction:column;flex:1 1 auto;min-height:0}
+.mushaf-section .page-top{flex:0 0 auto}
+.mushaf-section .bismillah{flex:0 0 auto}
+.page-verse-text.fixed-lines{flex:1 1 auto;min-height:0;padding:2px 1px 5px;display:flex;flex-direction:column;justify-content:space-between;text-align:initial!important;line-height:1.3!important;white-space:normal;}
+.mushaf-line{direction:rtl;display:flex;justify-content:space-between;align-items:center;gap:0;flex-wrap:nowrap;width:100%;height:auto;min-height:0;white-space:nowrap;line-height:1.5;overflow:visible}
+.mushaf-word{font-family:'Amiri Quran',serif;line-height:1.45;flex:0 0 auto;white-space:nowrap;cursor:pointer}
+.mushaf-line .ayah-no{flex:0 0 auto;vertical-align:middle;width:33px;height:33px;font-size:16px;margin:0 2px}
+@media(max-width:390px){.mushaf-line .ayah-no{width:30px;height:30px;font-size:15px}}
+@media(min-width:480px){.mushaf-line .ayah-no{width:35px;height:35px;font-size:17px}}
+.mushaf-line .ayah-text.marked{box-shadow:inset 0 -2px #d8a25188}
+/* A line title never consumes the wide rectangle reserved for the body. */
+.page-verse-text.fixed-lines .mushaf-line:last-child{margin-bottom:0}
+
+.mushaf-line.line-centered{justify-content:center;gap:10px}
+
+.verse-tail{display:inline-flex;direction:rtl;align-items:center;justify-content:center;gap:3px;flex:0 0 auto;white-space:nowrap}
+
+/* Dense multi-surah pages remain readable even when no verified 15-line glyph map is available. */
+.reader-border.fallback-lines{height:auto;min-height:100%;display:block;overflow:visible;padding-bottom:43px}
+.reader-border.fallback-lines .mushaf-sections,.reader-border.fallback-lines .mushaf-section{display:block;min-height:0}
+.reader-border.fallback-lines .page-verse-text{display:block;line-height:1.85!important;text-align:right!important;text-align-last:right!important;overflow-wrap:normal}

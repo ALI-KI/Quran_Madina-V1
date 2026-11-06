@@ -1,0 +1,29 @@
+Initial static data and browser UI test (not Android APK test)
+[PASS] 6236 verses
+[PASS] 114 surahs
+[PASS] 604 pages
+[PASS] 30 juz
+[PASS] 240 quarter sections
+[PASS] correct total surah verse counts
+[PASS] pages starts at first ayah and ends at last
+[PASS] pages segments contiguous
+[PASS] juz starts at first ayah and ends at last
+[PASS] juz segments contiguous
+[PASS] quarters starts at first ayah and ends at last
+[PASS] quarters segments contiguous
+[PASS] verse IDs correct across all surahs
+[PASS] first render 5 verses page 2
+[PASS] ornamental border preserved
+[PASS] 5 bottom tabs preserved
+[PASS] next page works
+[PASS] previous page works
+[PASS] search results appear
+[PASS] verse actions open
+[PASS] bookmark appears
+[PASS] developer credit present
+[PASS] contact numbers present
+[PASS] no uncaught JS errors
+
+TOTAL: 24 checks passed
+
+SHA256 of Quran data: 43ab605249e943056c38d30f6888b7bae39ec176212e359522386e6b6e204bd7

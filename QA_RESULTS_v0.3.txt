@@ -1,0 +1,47 @@
+PASS | 114 surahs are present
+PASS | 6236 Quran ayah records are present
+PASS | 604 numbered page ranges are present
+PASS | Quran page ranges cover all verses exactly once
+PASS | Quran source dataset unmodified from previous release
+PASS | Vector ayah ornaments are embedded inside the offline preview
+PASS | Audio is hidden by default in HTML fallback
+PASS | 360px: audio controls absent at launch
+PASS | 360px: five footer sections kept
+PASS | 360px: page-2 shows verse numbers 1–5
+PASS | 360px: side ornament narrower than 18px
+PASS | 360px: no horizontal overflow
+PASS | 360px: reader fits vertically on page 2
+PASS | 360px: no javascript runtime errors
+PASS | 390px: audio controls absent at launch
+PASS | 390px: five footer sections kept
+PASS | 390px: page-2 shows verse numbers 1–5
+PASS | 390px: side ornament narrower than 18px
+PASS | 390px: no horizontal overflow
+PASS | 390px: reader fits vertically on page 2
+PASS | 390px: no javascript runtime errors
+PASS | Verse selection opens action sheet
+PASS | Selecting an ayah by itself does NOT show audio bar
+PASS | Explicit Listen action reveals player
+PASS | Player starts compact
+PASS | Reader height decreases only while listening
+PASS | Reciter name expands advanced audio controls
+PASS | Reciter name collapses advanced audio controls
+PASS | Close audio button hides the player
+PASS | Reading space is fully restored
+PASS | Bookmark creation does not summon audio player
+PASS | Saved verse exists in bookmarks
+PASS | Surah selector lists 114 surahs
+PASS | Surah selector filters by surah name
+PASS | Surah navigation opens Yusuf
+PASS | Designer identity and contacts preserved
+PASS | No JS errors after navigation and controls
+PASS | 412px: audio controls absent at launch
+PASS | 412px: five footer sections kept
+PASS | 412px: page-2 shows verse numbers 1–5
+PASS | 412px: side ornament narrower than 18px
+PASS | 412px: no horizontal overflow
+PASS | 412px: reader fits vertically on page 2
+PASS | 412px: no javascript runtime errors
+
+44 automated source/browser checks passed.
+NOT VALIDATED: official Madinah Mushaf 15-line exact layout, Qur'an text independent proofreading, Android APK compilation, actual offline MP3 playback, audio rights.
