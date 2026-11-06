@@ -6,6 +6,9 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.WindowInsets
+import android.view.WindowManager
+import android.view.View
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -88,7 +91,25 @@ class MainActivity : Activity() {
             }
         }
         setContentView(browser)
+        hideTopStatusBar()
         browser.loadUrl("https://app.local/index.html")
+    }
+
+    @Suppress("DEPRECATION")
+    private fun hideTopStatusBar() {
+        // Android 15 enforces edge-to-edge at targetSdk 35. Explicitly hide the
+        // phone status bar, rather than drawing the Mushaf below its icons.
+        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        if (android.os.Build.VERSION.SDK_INT >= 30) {
+            window.decorView.windowInsetsController?.hide(WindowInsets.Type.statusBars())
+        } else {
+            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
+        }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) hideTopStatusBar()
     }
 
     private fun notFound() = WebResourceResponse("text/plain", "UTF-8", 404, "Not Found", mapOf(), "Not found".byteInputStream())

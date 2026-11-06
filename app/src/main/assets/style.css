@@ -89,7 +89,6 @@
 .page-top span:before,.page-top span:after{content:'◆';font-size:6px;vertical-align:middle;color:#b89a60;margin:0 3px}
 
 /* ===== v0.4: genuine full-width line alignment instead of ragged HTML wrapping ===== */
-@font-face{font-family:'Amiri Quran';src:url('AmiriQuran.ttf') format('truetype');font-style:normal;font-weight:400;font-display:swap}
 .reader-border{height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden}
 .mushaf-sections{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;position:relative;z-index:2}
 .mushaf-section{display:flex;flex-direction:column;flex:1 1 auto;min-height:0}
@@ -113,3 +112,45 @@
 .reader-border.fallback-lines{height:auto;min-height:100%;display:block;overflow:visible;padding-bottom:43px}
 .reader-border.fallback-lines .mushaf-sections,.reader-border.fallback-lines .mushaf-section{display:block;min-height:0}
 .reader-border.fallback-lines .page-verse-text{display:block;line-height:1.85!important;text-align:right!important;text-align-last:right!important;overflow-wrap:normal}
+
+/* ===== v0.5: genuine Quranic reading ergonomics & safe layout ===== */
+/* Denser Mushaf page without removing the ornate identity. */
+.reader-border{min-width:0;max-width:100%;}
+.mushaf-sections,.mushaf-section,.page-verse-text{min-width:0;}
+.mushaf-line{max-width:100%;min-width:0;}
+.mushaf-line .ayah-no{font-family:'Amiri Quran',serif;font-size:clamp(11px,3.3vw,14px)!important;line-height:1!important;padding:1px 0 3px!important;text-align:center;}
+@media(min-width:480px){.mushaf-line .ayah-no{font-size:15px!important}}
+/* Quarter starts: visible beside the appropriate first Quran word, not a new 'verse'. */
+.mushaf-word.quarter-start{position:relative}
+.mushaf-word.quarter-start:before{content:'۞';font:18px/1 Georgia,serif;color:#926325;position:absolute;right:-19px;top:-7px;z-index:3;background:#fffbf1dd;border-radius:50%;width:18px;height:18px;display:grid;place-items:center;text-shadow:0 0 1px #fff;pointer-events:none}
+.quarter-badge{display:inline-block;vertical-align:middle;color:#754e22;background:#fff7e5;border:1px solid #d4b679;border-radius:12px;margin-inline:2px 4px;padding:0 5px;font:11px/1.65 Tahoma,Arial,sans-serif}
+.quarter-badge span{font-size:9px}
+/* Guardrails: a page may scroll vertically if real text cannot be fitted readably, NEVER clip. */
+.reader-border.fallback-lines{overflow:visible!important;height:auto!important;min-height:100%;}
+.reader-border.fallback-lines .page-verse-text{word-break:normal;white-space:normal;overflow-wrap:break-word;}
+/* Night theme: controls must be clearly legible even on dark panels. */
+.night .topbar{background-color:#302c28;background-image:linear-gradient(110deg,#33322df0,#39332bed),url('header-motif.svg');border-color:#c4aa78}
+.night .topbar .icon-btn,.night .topbar .arrow,.night .topbar svg,.night .page-facts,.night .nav-item,.night .reciter,.night .control,.night .player-collapse,.night .tiny-action,.night .player-sub,.night .settings-row,.night .section-heading,.night .hint,.night .line-item small,.night .line-item strong{color:#f5e6c8!important;stroke:#f5e6c8}
+.night .bottomnav,.night .audio-bar{background:#34322f;border-color:#b79b63}
+.night .nav-item.selected{background:linear-gradient(#5f533d,#48402f);border:1px solid #d4b779;color:#fff3d7}
+.night .nav-item.selected svg,.night .nav-item svg{stroke:#e8d5af!important}
+.night .topbar .surah-control{color:#f7e9cd;background:linear-gradient(#514330,#40382d);border-color:#bba06c}
+.night .page-top span,.night .page-number{background:#4a4234!important;color:#f9e8c6!important}
+.night .ayah-no{color:#292019!important} /* verse numerals stay dark on the parchment rosette */
+.night .mushaf-word.quarter-start:before{background:#3b3830;color:#e8cc91}
+.night .quarter-badge{background:#484133;border-color:#ae9465;color:#ffe8bd}
+.night .content-page .tabs button,.night .line-item,.night .progress-card,.night .setting-button,.night .contact-card,.night .searchfield,.night .verse-sheet,.night .verse-actions button{background:#3e382e!important;color:#fff0d1!important;border-color:#b29a70!important}
+.night .searchfield::placeholder{color:#ddd0b4}
+.night .contact-card a,.night .source-info,.night .page-facts span,.night .title-pill{color:#efdbb5}
+.night .verse-sheet .sheet-verse{color:#fff2dd}
+.night .audio-row .icon-btn{color:#f3e0bc}
+@media(max-width:390px){.mushaf-word.quarter-start:before{right:-16px;width:15px;height:15px;font-size:16px}}
+
+/* Numerals are optically centered INSIDE the gold rosette, including 3-digit ayahs. */
+.mushaf-line .ayah-no[data-digits="2"]{font-size:12px!important;letter-spacing:-.35px}
+.mushaf-line .ayah-no[data-digits="3"]{font-size:10.5px!important;letter-spacing:-.55px}
+.ayah-no[data-digits="2"]{font-size:13px!important}
+.ayah-no[data-digits="3"]{font-size:11px!important}
+
+/* Portable Arabic offline font stack; fonts are provided by the Android OS, not redistributed. */
+.page-verse-text,.bismillah,.mushaf-word,.ayah-no,.page-top span,.page-number,.result-verse,.sheet-verse{font-family:'Amiri Quran','Noto Naskh Arabic','Noto Sans Arabic',serif}
