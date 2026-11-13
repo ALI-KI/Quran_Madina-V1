@@ -4,7 +4,16 @@
 (() => {
 'use strict';
 const Q=window.QURAN_DATA;
-if(!Q || Q.verses.length!==6236 || Q.pages.length!==604) {document.body.textContent='تعذر التحقق من بيانات المصحف.';return;}
+const M=window.MUSHAF_PAGE_MAP;
+if(!Q || Q.verses.length!==6236 || Q.pages.length!==604 ||
+   !M || M.source_commit!=='b4155f07e4aea087d2c458069acff9f7c7e749f6' ||
+   M.unique_ayahs!==6236 || !Array.isArray(M.pages) || M.pages.length!==604) {
+ document.body.textContent='تعذر التحقق من بيانات المصحف الأصلية وخريطة الصفحات. لن نعرض ترقيمًا غير مطابق.';
+ return;
+}
+// The printed SVG edition controls actual page ranges; the CTAN page table
+// describes a different pagination in some places and must NOT be used here.
+Q.pages=M.pages;
 const $=id=>document.getElementById(id);
 const ar=n=>String(n).replace(/\d/g,c=>'٠١٢٣٤٥٦٧٨٩'[+c]);
 const clean=s=>String(s).normalize('NFKD').replace(/[\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g,'').replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي').replace(/ؤ/g,'و').replace(/ئ/g,'ي').replace(/ة/g,'ه').toLowerCase().trim();

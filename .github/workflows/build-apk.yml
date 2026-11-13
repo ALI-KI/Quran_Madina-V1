@@ -34,7 +34,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: app/src/main/assets/mushaf-svg
-          key: quran-ws-hafs-kfqc-b4155f07-604-svg-polygon-v1
+          key: quran-ws-hafs-kfqc-b4155f07-604-svg-verified-edition-map-v2
 
       - name: Retrieve pinned original Mushaf SVG with verse coordinates
         if: steps.mushaf-cache.outputs.cache-hit != 'true'
@@ -88,7 +88,7 @@ jobs:
           set -euo pipefail
           CODE=$((10000 + GITHUB_RUN_NUMBER))
           gradle --no-daemon --stacktrace :app:assembleRelease \
-            -PappVersionCode="$CODE" -PappVersionName="0.8.$GITHUB_RUN_NUMBER"
+            -PappVersionCode="$CODE" -PappVersionName="0.8.1.$GITHUB_RUN_NUMBER"
       - name: Verify signature matches permanent owner-held key
         env:
           EXPECTED_CERT_SHA256: ${{ vars.QURAN_SIGNING_CERT_SHA256 }}
