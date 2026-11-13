@@ -1,5 +1,5 @@
-/* Madina Quran development edition — Original quran text preserved from source package.
-   Source: https://ctan.org/pkg/quran (LPPL-1.3c-or-later). Visual line layout not yet official KFGQPC vector layout.
+/* Madina Quran v0.8 — KFGQPC Hafs SVG with verse polygons; preserved original typography.
+   Sources: official Hafs-KFGQPC vector SVG from quran-ws, plus offline search text from CTAN Quran (LPPL-1.3c).
    App design and development: Eng. Mahmoud Elgamsy. */
 (() => {
 'use strict';
@@ -34,6 +34,8 @@ let audioVisible=false;
 let selectionVisible=false;
 state.playerOpen=false; // Always begin in compact audio mode, even if an older preview was expanded.
 let activeIndex=Math.max(0,Math.min(6235,+state.selected||7));
+const svgPageCache=new Map(); let svgRequestSerial=0;
+
 let toastT=null;
 function toast(msg){const el=$('toast');el.textContent=msg;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,3500)}
 function persist(){save('mq_settings_v2',state)}
@@ -65,27 +67,86 @@ function decorateAyah(i, verse){const key=idFor(verse);const q=quarterStarts.get
 function maybeBismillah(firstV){if(firstV[1]===1&&firstV[0]!==1&&firstV[0]!==9)return '<div class="bismillah">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>';return ''}
 function renderMushaf(){
  if(state.readerMode==='flex')return renderFlex();
- const p=state.page;
- const pageFile=String(p).padStart(3,'0');
- // KFGQPC vector artwork, rendered once during the Android APK build. This is NOT HTML typesetting.
- // Page art is unmodified Quran text and punctuation; UI overlay is entirely separate.
- return `<article class="official-reader" aria-label="صفحة مصحف المدينة ${ar(p)}">
-  <div class="official-art-frame" data-action="pageAyahs" role="button" tabindex="0" aria-label="اختر آية من الصفحة ${ar(p)}">
-   <img class="official-page-art" alt="الصفحة ${ar(p)} من مصحف المدينة النبوية، رواية حفص" src="mushaf-pages/${pageFile}.webp" loading="eager"
-      onerror="this.hidden=true;this.nextElementSibling.hidden=false">
-   <div class="official-missing" hidden>لم تُدرج ملفات الصفحات الرسمية في نسخة المعاينة هذه. أُعدَّ المشروع لبناء الصفحات الـ٦٠٤ من النسخة المتجهية للمجمع أثناء بناء APK، ولن نعرض نصًا مُعاد التنسيق بدل المصحف الأصلي.</div>
-  </div>
-  <button class="official-verse-select" data-action="pageAyahs">اختيار آية للاستماع أو وضع علامة مرجعية <span aria-hidden="true">⌄</span></button>
+ // The source SVG contains the original artwork AND precise verse polygons.
+ // It never reflows, scales individual words or recreates Arabic glyphs.
+ return `<article class="official-reader" aria-label="صفحة مصحف المدينة ${ar(state.page)}">
+   <div class="official-art-frame" id="svgFrame" aria-label="المس الآية مباشرة لاختيارها">
+    <div id="svgMount" class="svg-mount" aria-live="off"><span class="official-loading">جاري عرض صفحة المصحف…</span></div>
+   </div>
  </article>`;
 }
-function openPageAyahs(){
- const [lo,hi]=Q.pages[state.page-1];
- const rows=[];
- for(let i=lo-1;i<hi;i++){
-  const v=Q.verses[i],tag=bookmarks[idFor(v)]?'★ ':'';
-  rows.push(`<button class="line-item" data-action="chooseVerse" data-arg="${i}"><span class="num">${ar(v[1])}</span><span class="meta"><strong>${tag}سورة ${esc(Q.names[v[0]-1])}</strong><small>${esc(v[2].slice(0,105))}${v[2].length>105?'…':''}</small></span></button>`);
+async function loadOfficialSvg(){
+ if(state.tab!=='mushaf'||state.readerMode!=='original')return;
+ const mount=$('svgMount');if(!mount)return;
+ const page=state.page,serial=++svgRequestSerial;
+ const pageFile=String(page).padStart(3,'0');
+ try{
+  let content=svgPageCache.get(page);
+  if(!content){
+   const response=await fetch(`mushaf-svg/${pageFile}.svg`);
+   if(!response.ok)throw new Error(`صفحة ${page} غير موجودة (${response.status})`);
+   content=await response.text();
+   if(content.length<8000)throw new Error('ملف الصفحة غير مكتمل');
+   svgPageCache.set(page,content);
+   if(svgPageCache.size>4)svgPageCache.delete(svgPageCache.keys().next().value);
+  }
+  if(serial!==svgRequestSerial||state.page!==page||!mount.isConnected)return;
+  const doc=new DOMParser().parseFromString(content,'image/svg+xml');
+  if(doc.querySelector('parsererror'))throw new Error('صيغة SVG غير صالحة');
+  const root=doc.documentElement;
+  if(root.localName!=='svg')throw new Error('ليست صفحة SVG');
+  // Keep the page SVG and its hit areas in the same coordinate space.
+  const polygons=Array.from(root.querySelectorAll('path.ayahPolygon'));
+  const [first,last]=Q.pages[page-1];
+  if(polygons.length!==last-first+1)throw new Error(`عدد مناطق الآيات غير مطابق في الصفحة ${page}: ${polygons.length} بدل ${last-first+1}`);
+  const actual=new Set();
+  for(const poly of polygons){
+   const sur=Number(poly.getAttribute('surah')),ayah=Number(poly.getAttribute('ayah'));
+   if(!(sur>=1&&sur<=114&&ayah>=1&&ayah<=Q.counts[sur-1]))throw new Error(`رقم آية غير صالح في الصفحة ${page}`);
+   const verseIndex=surahStart[sur-1]+ayah-1;
+   if(verseIndex<first-1||verseIndex>last-1||actual.has(verseIndex))throw new Error(`خريطة آيات غير مطابقة في الصفحة ${page}`);
+   actual.add(verseIndex);
+   poly.setAttribute('data-verse',verseIndex);
+   poly.setAttribute('aria-label',`${Q.names[sur-1]} الآية ${ayah}`);
+   poly.style.pointerEvents='all';poly.style.fill='transparent';
+   // The source file uses fill-opacity="0": allow click on invisible polygons.
+   poly.style.fillOpacity='0';
+  }
+  if(actual.size!==last-first+1)throw new Error('خريطة آيات ناقصة');
+  root.setAttribute('class','interactive-mushaf-svg');
+  root.setAttribute('role','group');
+  root.setAttribute('aria-label',`صفحة ${ar(page)}، يمكنك لمس كل آية`);
+  root.setAttribute('preserveAspectRatio','xMidYMid meet');
+  const parsed=document.importNode(root,true);
+  mount.replaceChildren(parsed);
+  // Most pages are already tightly fitted. Crop oversized initial spreads.
+  requestAnimationFrame(()=>{
+   if(!parsed.isConnected)return;
+   try{
+    const bounds=parsed.getBBox();
+    const original=parsed.viewBox.baseVal;
+    if(bounds.width>0&&bounds.height>0&&original.width>0&&original.height>0&&
+       bounds.width/original.width<0.83&&bounds.height/original.height<0.83){
+      const pad=Math.max(bounds.width,bounds.height)*0.035;
+      parsed.setAttribute('viewBox',`${bounds.x-pad} ${bounds.y-pad} ${bounds.width+2*pad} ${bounds.height+2*pad}`);
+    }
+   }catch(e){}
+   highlightOfficialAyah();
+  });
+ }catch(err){
+  if(serial!==svgRequestSerial||!mount.isConnected)return;
+  console.error('Mushaf source error:',err);
+  mount.innerHTML='<div class="official-missing">تعذّر تحميل صفحة المصحف الأصلية أو خريطة لمس آياتها. لن نستبدلها بنص تقريبي قد يغيّر مواضع الآيات.</div>';
  }
- showLayer(`<div class="drawer-head"><h3>اختر آية من الصفحة ${ar(state.page)}</h3><button class="icon-btn" data-action="close">×</button></div><p class="hint">النص المطبوع لا يُعاد تنسيقه؛ تحديد الآية يتم من القائمة لحين اعتماد إحداثيات كل آية على الصفحة الرسمية.</p><div class="line-list">${rows.join('')}</div>`);
+}
+function highlightOfficialAyah(){
+ const svg=$('svgMount')?.querySelector('svg');if(!svg)return;
+ svg.querySelectorAll('path.ayahPolygon').forEach(p=>{
+  const active=Number(p.getAttribute('data-verse'))===activeIndex && (selectionVisible||audioVisible);
+  p.classList.toggle('ayah-selected',active);
+  p.style.fillOpacity=active?'0.15':'0';
+  p.style.fill=active?'#be8b35':'transparent';
+ });
 }
 function renderFlex(){let sur=currentSurah();let start=surahStart[sur-1],end=start+Q.counts[sur-1];let items=[];
  for(let i=start;i<end;i++){const v=valAt(i);let mark=bookmarks[idFor(v)]?'★':'';const qi=quarterStarts.get(i);const tag=qi===undefined?'':`<span class="quarter-badge" aria-label="${quarterName(qi)}">۞ ${quarterName(qi)}</span>`;items.push(`<button class="line-item" data-verse="${i}"><div class="num">الآية ${ar(v[1])} ${mark}</div>${tag}<div class="result-verse ayah-text ${(audioVisible||selectionVisible)&&activeIndex===i?'active':''}">${esc(v[2])}</div></button>`)}
@@ -100,7 +161,7 @@ function renderBookmarks(){let rows=Object.entries(bookmarks).map(([k,b])=>{let 
  return `<section class="content-page"><h1 class="title-pill">علاماتي المرجعية</h1><p class="hint">تُحفظ جميع العلامات على هاتفك، ويمكنك الرجوع لأي آية مباشرةً.</p>${rows.length?`<div class="line-list">${rows.join('')}</div>`:'<div class="progress-card">لم تضف علامات بعد. اضغط على أي آية، واختر «إضافة علامة».</div>'}</section>`}
 function renderProgress(){let dates=Object.keys(visited).sort().reverse();let today=new Date().toLocaleDateString('en-CA');let unique=new Set(Object.values(visited).flat());let total=Object.values(visited).reduce((a,b)=>a+b.length,0);
  let datesRows=dates.slice(0,30).map(d=>`<div class="settings-row"><strong>${esc(d)}</strong><span>${ar(visited[d].length)} صفحات</span></div>`).join('');return `<section class="content-page"><h1 class="title-pill">المتابعة والورد اليومي</h1><div class="progress-card"><div class="large-stat">${ar((visited[today]||[]).length)}</div>صفحات زرتها اليوم</div><div class="progress-card"><div class="large-stat">${ar(unique.size)} / ٦٠٤</div>عدد الصفحات المختلفة التي قرأتها في التطبيق</div><p class="hint">المتابعة تسجل الصفحات التي تفتحها، ولا تعد شهادة بإتمام تلاوتها؛ سيتم إضافة تأكيد الورد والختمة في الإصدار التالي.</p><h2 class="section-heading">سجل الأيام</h2>${datesRows||'لم يُسجل نشاط بعد.'}</section>`}
-function renderSettings(){return `<section class="content-page"><h1 class="title-pill">الإعدادات</h1><h2 class="section-heading">القراءة</h2><div class="settings-row"><span>وضع القراءة</span><button class="setting-button" data-action="readerMode">${state.readerMode==='original'?'المصحف بالصفحات':'القراءة المرنة'}</button></div><div class="settings-row"><span>المظهر الليلي</span><input type="checkbox" id="nightCheck" ${state.night?'checked':''}></div><div class="settings-row"><span>حجم الخط</span><input id="fontRange" type="range" min="23" max="40" value="${state.fontSize}"></div><div class="settings-row"><span>مصدر التلاوة</span><button class="setting-button" data-action="reciterPicker">${esc(RECITERS[state.reciter].name)} ▾</button></div><div class="settings-row"><span>إدارة التحميلات</span><button class="setting-button" data-action="download">تحميل السورة الحالية</button></div><div class="settings-row"><span>مراجعة المصادر القرآنية</span><span class="badge-soft">قيد التدقيق النهائي</span></div><p class="hint">وضع المصحف الأصلي يعرض صفحات متجهية ثابتة محوّلة للعرض على الهاتف من أرشيف المجمع، دون إعادة توزيع الكلمات. التحديد الموضعي المباشر على الحروف يتطلب خرائط آيات مُراجَعة. الوضع المرن مستقل.</p><h2 class="section-heading">عن التطبيق والمطوّر</h2><div class="contact-card"><div>✦ تصميم وتطوير ✦</div><h2>م. محمود الجمصي</h2><div class="en">Mahmoud Elgamsy</div><a href="tel:+966562284194">🇸🇦 +966 56 228 4194</a><a href="tel:+201017230727">🇪🇬 +20 101 723 0727</a><a href="mailto:mobd3on@gmail.com">✉ mobd3on@gmail.com</a></div><p class="source-info">مصدر نص البحث والقراءة المرنة: حزمة LaTeX Quran للمطوّر Seiied-Mohammad-Javad Razavian بموجب LPPL 1.3c. المصحف الأصلي من ملفات مجمع الملك فهد المتجهية، عبر نسخة مرآة مثبتة الإصدار، وتخضع المطابقة النهائية للمراجعة. مصدر التلاوة المقترح: EveryAyah — ولم تُضمَّن تسجيلات داخل التطبيق؛ يلزم التحقق من شروط استخدامها قبل النشر العام. <br><a href="https://ctan.org/pkg/quran">المصدر البرمجي للقرآن</a></p></section>`}
+function renderSettings(){return `<section class="content-page"><h1 class="title-pill">الإعدادات</h1><h2 class="section-heading">القراءة</h2><div class="settings-row"><span>وضع القراءة</span><button class="setting-button" data-action="readerMode">${state.readerMode==='original'?'المصحف بالصفحات':'القراءة المرنة'}</button></div><div class="settings-row"><span>المظهر الليلي</span><input type="checkbox" id="nightCheck" ${state.night?'checked':''}></div><div class="settings-row"><span>حجم الخط</span><input id="fontRange" type="range" min="23" max="40" value="${state.fontSize}"></div><div class="settings-row"><span>مصدر التلاوة</span><button class="setting-button" data-action="reciterPicker">${esc(RECITERS[state.reciter].name)} ▾</button></div><div class="settings-row"><span>إدارة التحميلات</span><button class="setting-button" data-action="download">تحميل السورة الحالية</button></div><div class="settings-row"><span>مراجعة المصادر القرآنية</span><span class="badge-soft">قيد التدقيق النهائي</span></div><p class="hint">وضع المصحف الأصلي يعرض صفحات SVG متجهية بخط المصحف الأصلي ومضلعات لمس الآيات من نفس الصفحة، من غير إعادة توزيع الكلمات. الوضع المرن مستقل.</p><h2 class="section-heading">عن التطبيق والمطوّر</h2><div class="contact-card"><div>✦ تصميم وتطوير ✦</div><h2>م. محمود الجمصي</h2><div class="en">Mahmoud Elgamsy</div><a href="tel:+966562284194">🇸🇦 +966 56 228 4194</a><a href="tel:+201017230727">🇪🇬 +20 101 723 0727</a><a href="mailto:mobd3on@gmail.com">✉ mobd3on@gmail.com</a></div><p class="source-info">مصدر نص البحث والقراءة المرنة: حزمة LaTeX Quran للمطوّر Seiied-Mohammad-Javad Razavian بموجب LPPL 1.3c. المصحف الأصلي من ملفات مجمع الملك فهد المتجهية بمضلعات لمس من مشروع Quran.ws، عبر نسخة مصدر مثبتة الإصدار، وتخضع المطابقة النهائية للمراجعة. مصدر التلاوة المقترح: EveryAyah — ولم تُضمَّن تسجيلات داخل التطبيق؛ يلزم التحقق من شروط استخدامها قبل النشر العام. <br><a href="https://ctan.org/pkg/quran">المصدر البرمجي للقرآن</a></p></section>`}
 function applyHeader(){const first=currentStart(),shown=(activeIndex>=first&&activeIndex<Q.pages[state.page-1][1])?activeIndex:first,v=valAt(shown),g=first+1,quarter=groupOf(g,Q.quarters);$('surahTitle').textContent='سُورَةُ '+Q.names[v[0]-1];$('pageFacts').innerHTML=`<span>الجزء ${ar(groupOf(g,Q.juz))}</span><span>الحزب ${ar(Math.ceil(quarter/4))}</span><span>الربع ${ar((quarter-1)%4+1)}</span><span>ص ${ar(state.page)}</span>`;}
 // The original mushaf is a single verified page artwork; no CSS/JS reflow is permitted.
 function fitMushaf(){}
@@ -122,9 +183,9 @@ function stopAndHideAudio(){
  audioVisible=false;state.playerOpen=false;syncAudioPanel();updateAudioUI();document.querySelectorAll('.ayah-text.active').forEach(e=>e.classList.remove('active'));
 }
 function render(){document.body.classList.toggle('night',!!state.night);document.documentElement.style.setProperty('--ayahSize',state.fontSize+'px');applyHeader();
- const pages={mushaf:renderMushaf,index:renderIndex,bookmarks:renderBookmarks,progress:renderProgress,settings:renderSettings};$('mainArea').innerHTML=(pages[state.tab]||renderMushaf)();document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('selected',b.dataset.tab===state.tab));syncAudioPanel();updateAudioUI();requestAnimationFrame(fitMushaf)}
+ const pages={mushaf:renderMushaf,index:renderIndex,bookmarks:renderBookmarks,progress:renderProgress,settings:renderSettings};$('mainArea').innerHTML=(pages[state.tab]||renderMushaf)();document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('selected',b.dataset.tab===state.tab));syncAudioPanel();updateAudioUI();requestAnimationFrame(fitMushaf);if(state.tab==='mushaf'&&state.readerMode==='original')loadOfficialSvg()}
 function showLayer(html,isVerse=false){$('shade').hidden=false;const el=isVerse?$('verseSheet'):$('drawer');el.innerHTML=html;el.hidden=false}
-function closeLayers(){selectionVisible=false;$('shade').hidden=true;$('drawer').hidden=true;$('verseSheet').hidden=true;if(!audioVisible)document.querySelectorAll('.ayah-text.active').forEach(e=>e.classList.remove('active'))}
+function closeLayers(){selectionVisible=false;$('shade').hidden=true;$('drawer').hidden=true;$('verseSheet').hidden=true;if(!audioVisible)document.querySelectorAll('.ayah-text.active').forEach(e=>e.classList.remove('active'));highlightOfficialAyah()}
 function openSurahPicker(){
  const list=Q.names.map((name,i)=>`<button class="line-item" data-action="surah" data-arg="${i+1}"><span class="num">${ar(i+1)}</span><span class="meta"><strong>سورة ${esc(name)}</strong><small>${ar(Q.counts[i])} آية · الصفحة ${ar(pageOf(surahStart[i]))}</small></span><span class="chevron">‹</span></button>`).join('');
  showLayer(`<div class="drawer-head"><h3>فهرس السور — ١١٤ سورة</h3><button class="icon-btn" data-action="close">×</button></div><input class="searchfield" id="surahFilter" placeholder="ابحث باسم السورة أو رقمها" autocomplete="off"/><div class="line-list" id="surahPickerList">${list}</div>`);
@@ -134,7 +195,7 @@ function searchUI(){showLayer(`<div class="drawer-head"><h3>بحث في القر
 function updateSearch(q){const result=$('searchResults');if(!result)return;const query=clean(q);if(query.length<2){result.innerHTML='<p class="hint">اكتب حرفين أو أكثر للبحث في القرآن كاملًا دون إنترنت.</p>';return}
  let found=[];for(let i=0;i<6236;i++){if(clean(Q.verses[i][2]).includes(query)){found.push(i);if(found.length>=75)break}}result.innerHTML=`<p class="hint">${found.length===75?'أول ٧٥ نتيجة':ar(found.length)+' نتائج'}</p>`+found.map(i=>{let v=valAt(i);return `<button class="line-item" data-action="gotoGlobal" data-arg="${i}"><span class="meta"><strong>${esc(Q.names[v[0]-1])} • ${ar(v[1])}</strong><span class="result-verse" style="font-size:17px;line-height:1.6">${esc(v[2].slice(0,95))}${v[2].length>95?'…':''}</span></span></button>`}).join('')}
 function openVerse(index){selectionVisible=true;activeIndex=index;state.selected=index;persist();let v=valAt(index);let marked=bookmarks[idFor(v)];const html=`<div class="drawer-head"><h3>${esc(Q.names[v[0]-1])} — الآية ${ar(v[1])}</h3><button class="icon-btn" data-action="close">×</button></div><div class="sheet-verse">${esc(v[2])}</div><div class="verse-actions"><button data-action="playSelected">▶ استماع</button><button data-action="bookmarkVerse">${marked?'★ حذف العلامة':'☆ إضافة علامة'}</button><button data-action="copyVerse">نسخ الآية</button><button data-action="markMemorize">علامة حفظ</button><button data-action="markReview">علامة مراجعة</button><button data-action="repeatAyah">تكرار الآية</button></div>`;
- showLayer(html,true);document.querySelectorAll('.ayah-text').forEach(e=>e.classList.toggle('active',Number(e.dataset.verse)===activeIndex))}
+ showLayer(html,true);document.querySelectorAll('.ayah-text').forEach(e=>e.classList.toggle('active',Number(e.dataset.verse)===activeIndex));highlightOfficialAyah()}
 function bookmark(type='مرجعية'){const v=valAt(activeIndex),key=idFor(v);if(type==='toggle'&&bookmarks[key]){delete bookmarks[key];toast('تم حذف العلامة')}else{bookmarks[key]={type:type==='toggle'?'مرجعية':type,time:Date.now()};toast('تم حفظ العلامة: '+Q.names[v[0]-1]+' '+ar(v[1]))}save('mq_bookmarks_v1',bookmarks);closeLayers();render()}
 function shareCopy(){const v=valAt(activeIndex),s=v[2]+'\n['+Q.names[v[0]-1]+': '+v[1]+']';if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(s).then(()=>toast('تم نسخ الآية')).catch(()=>oldCopy(s))}else oldCopy(s)}
 function oldCopy(s){const t=document.createElement('textarea');t.value=s;document.body.appendChild(t);t.select();try{document.execCommand('copy');toast('تم نسخ الآية')}catch(e){toast('تعذر النسخ في هذا المتصفح')}t.remove()}
@@ -174,7 +235,7 @@ audio.addEventListener('timeupdate',updateAudioUI);audio.addEventListener('error
 function downloadSurah(){const s=valAt(activeIndex)[0];if(window.AndroidBridge?.downloadSurah){window.AndroidBridge.downloadSurah(state.reciter,s);toast('بدأ تنزيل سورة '+Q.names[s-1]+' للاستماع بدون نت')}else toast('تنزيل التلاوات متاح من داخل تطبيق أندرويد؛ هذه معاينة تعمل دون تثبيت')}
 window.onNativeDownloadProgress=(reciter,s,done,total)=>{toast('تنزيل سورة '+Q.names[s-1]+': '+ar(done)+' / '+ar(total)+' آية')};
 window.onNativeDownloadCompleted=(reciter,s,fail)=>{toast(fail?'اكتمل التنزيل مع وجود '+ar(fail)+' ملفات غير متاحة':'اكتمل تنزيل سورة '+Q.names[s-1]+' بدون إنترنت')};
-function handleAction(a,arg){switch(a){case'menu':openMenu();break;case'pageAyahs':openPageAyahs();break;case'chooseVerse':closeLayers();openVerse(+arg);break;case'reciterPicker':openReciterPicker();break;case'chooseReciter':chooseReciter(arg);break;case'search':searchUI();break;case'close':closeLayers();break;case'index':setTab('index');break;case'surahPicker':openSurahPicker();break;case'tab':setTab(arg);break;case'page':setPage(arg);break;case'surah':jumpTo(surahStart[+arg-1]);break;case'gotoGlobal':jumpTo(+arg);break;case'indexType':state.indexType=arg;render();break;case'prevPage':setPage(state.page-1);break;case'nextPage':setPage(state.page+1);break;case'quickBookmark':activeIndex=currentStart();bookmark('toggle');break;case'bookmarkVerse':bookmark('toggle');break;case'markMemorize':bookmark('حفظ');break;case'markReview':bookmark('مراجعة');break;case'copyVerse':shareCopy();break;case'playSelected':closeLayers();playIndex(activeIndex);break;case'repeatAyah':state.repeat='ayah';persist();closeLayers();playIndex(activeIndex);break;case'playAudio':togglePlay();break;case'prevAyah':nextAyah(-1,true);break;case'nextAyah':nextAyah(1,true);break;case'closePlayer':stopAndHideAudio();break;case'togglePlayer':state.playerOpen=!state.playerOpen;syncAudioPanel();break;case'download':downloadSurah();break;case'speed':state.speed=({1:1.25,1.25:1.5,1.5:0.75,0.75:1})[state.speed]||1;audio.playbackRate=state.speed;persist();updateAudioUI();break;case'repeat':state.repeat=({off:'ayah',ayah:'surah',surah:'off'})[state.repeat];persist();updateAudioUI();break;case'readerMode':state.readerMode=state.readerMode==='original'?'flex':'original';persist();closeLayers();render();break;}}
+function handleAction(a,arg){switch(a){case'menu':openMenu();break;case'chooseVerse':closeLayers();openVerse(+arg);break;case'reciterPicker':openReciterPicker();break;case'chooseReciter':chooseReciter(arg);break;case'search':searchUI();break;case'close':closeLayers();break;case'index':setTab('index');break;case'surahPicker':openSurahPicker();break;case'tab':setTab(arg);break;case'page':setPage(arg);break;case'surah':jumpTo(surahStart[+arg-1]);break;case'gotoGlobal':jumpTo(+arg);break;case'indexType':state.indexType=arg;render();break;case'prevPage':setPage(state.page-1);break;case'nextPage':setPage(state.page+1);break;case'quickBookmark':activeIndex=currentStart();bookmark('toggle');break;case'bookmarkVerse':bookmark('toggle');break;case'markMemorize':bookmark('حفظ');break;case'markReview':bookmark('مراجعة');break;case'copyVerse':shareCopy();break;case'playSelected':closeLayers();playIndex(activeIndex);break;case'repeatAyah':state.repeat='ayah';persist();closeLayers();playIndex(activeIndex);break;case'playAudio':togglePlay();break;case'prevAyah':nextAyah(-1,true);break;case'nextAyah':nextAyah(1,true);break;case'closePlayer':stopAndHideAudio();break;case'togglePlayer':state.playerOpen=!state.playerOpen;syncAudioPanel();break;case'download':downloadSurah();break;case'speed':state.speed=({1:1.25,1.25:1.5,1.5:0.75,0.75:1})[state.speed]||1;audio.playbackRate=state.speed;persist();updateAudioUI();break;case'repeat':state.repeat=({off:'ayah',ayah:'surah',surah:'off'})[state.repeat];persist();updateAudioUI();break;case'readerMode':state.readerMode=state.readerMode==='original'?'flex':'original';persist();closeLayers();render();break;}}
 document.addEventListener('click',e=>{if(e.target.id==='shade'){closeLayers();return}const b=e.target.closest('[data-tab],[data-verse],[data-action]');if(!b)return;if(b.dataset.tab){setTab(b.dataset.tab);return}if(b.hasAttribute('data-verse')){openVerse(+b.dataset.verse);return}if(b.dataset.action)handleAction(b.dataset.action,b.dataset.arg)});
 document.addEventListener('input',e=>{if(e.target.id==='searchInput')updateSearch(e.target.value);if(e.target.id==='surahFilter'){const filter=clean(e.target.value);$('surahPickerList')?.querySelectorAll('[data-action=surah]').forEach(b=>{b.hidden=!!filter&&!clean(b.textContent).includes(filter)&&String(b.dataset.arg)!==filter;});}if(e.target.id==='fontRange'){state.fontSize=Number(e.target.value);persist();document.documentElement.style.setProperty('--ayahSize',state.fontSize+'px')}if(e.target.id==='audioSeek'){if(isFinite(audio.duration)&&audio.duration>0)audio.currentTime=Number(e.target.value)/100*audio.duration}});
 document.addEventListener('change',e=>{if(e.target.id==='nightCheck'){state.night=e.target.checked;persist();render()}});

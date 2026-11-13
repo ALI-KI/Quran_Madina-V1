@@ -1,4 +1,4 @@
-name: Build Quran Android signed APK (original Mushaf)
+name: Build Quran Android signed APK (interactive Mushaf)
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   signed-release:
-    name: Build fixed-layout Mushaf release APK
+    name: Build interactive Mushaf release APK
     runs-on: ubuntu-latest
     timeout-minutes: 115
     steps:
@@ -29,42 +29,33 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
-      - name: Prepare Python 3.12 for archival Mushaf conversion
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: 'pip'
-          cache-dependency-path: tools/requirements-mushaf.txt
-      - name: Install KFGQPC artwork conversion tools
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends poppler-utils
-          python3 -m pip install -r tools/requirements-mushaf.txt
-      - name: Restore approved Mushaf page render cache
+      - name: Restore verified interactive Hafs page cache
         id: mushaf-cache
         uses: actions/cache@v4
         with:
-          path: app/src/main/assets/mushaf-pages
-          key: kfgqpc-hafs39-mirror-a6f52f8-1200px-webp-q92-poppler-v2
-      - name: Retrieve pinned Quran vector pages (KFGQPC archival mirror)
+          path: app/src/main/assets/mushaf-svg
+          key: quran-ws-hafs-kfqc-b4155f07-604-svg-polygon-v1
+
+      - name: Retrieve pinned original Mushaf SVG with verse coordinates
         if: steps.mushaf-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
           set -euo pipefail
-          git clone --filter=blob:none --depth=1 https://github.com/MushafAlMadinahVector/MushafAlMadinahVector.git "$RUNNER_TEMP/mushaf-vector"
-          cd "$RUNNER_TEMP/mushaf-vector"
-          test "$(git rev-parse HEAD)" = "a6f52f8b05fa28cdffb637cbbab0ed30515bbeb2" || { echo '::error::Mushaf mirror changed; refusing to use unreviewed artwork'; exit 1; }
-          test "$(find quran-pages -name '*Hafs39__DM.ai' | wc -l)" -eq 604
-      - name: Render original PDF-compatible vector pages as offline WebP
+          git clone --filter=blob:none --depth=1 --sparse https://github.com/quran-ws/quran-svg.git "$RUNNER_TEMP/quran-svg"
+          git -C "$RUNNER_TEMP/quran-svg" sparse-checkout set mushafs/hafs/kfqc/svg
+          test "$(git -C "$RUNNER_TEMP/quran-svg" rev-parse HEAD)" = "b4155f07e4aea087d2c458069acff9f7c7e749f6" || { echo '::error::Source revision changed; refusing unreviewed Qur’an pages'; exit 1; }
+
+      - name: Stage and audit all 604 printable pages and clickable ayah polygons
         if: steps.mushaf-cache.outputs.cache-hit != 'true'
-        shell: bash
         run: |
-          python3 tools/prepare_mushaf_pages.py \
-            --source "$RUNNER_TEMP/mushaf-vector/quran-pages" \
-            --output app/src/main/assets/mushaf-pages --width 1200 --quality 92 --jobs 2
-      - name: Check all 604 original-layout pages before building
+          python3 tools/prepare_interactive_mushaf.py \
+            --source "$RUNNER_TEMP/quran-svg/mushafs/hafs/kfqc/svg" \
+            --output app/src/main/assets/mushaf-svg \
+            --data app/src/main/assets/quran-data.js
+
+      - name: Full offline content and interaction-map integrity checks
         run: |
-          python3 tools/check_mushaf_pages.py
+          python3 tools/check_interactive_mushaf.py
           python3 tools/qa_integrity_v05.py
           node --check app/src/main/assets/app.js
       - name: Require stable signing secrets and pinned certificate
@@ -97,7 +88,7 @@ jobs:
           set -euo pipefail
           CODE=$((10000 + GITHUB_RUN_NUMBER))
           gradle --no-daemon --stacktrace :app:assembleRelease \
-            -PappVersionCode="$CODE" -PappVersionName="0.7.$GITHUB_RUN_NUMBER"
+            -PappVersionCode="$CODE" -PappVersionName="0.8.$GITHUB_RUN_NUMBER"
       - name: Verify signature matches permanent owner-held key
         env:
           EXPECTED_CERT_SHA256: ${{ vars.QURAN_SIGNING_CERT_SHA256 }}
@@ -115,7 +106,7 @@ jobs:
       - name: Upload owner-signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: MadinaQuran-OriginalMushaf-signed-APK
+          name: MadinaQuran-InteractiveMushaf-signed-APK
           path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 30

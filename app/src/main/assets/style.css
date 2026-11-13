@@ -186,3 +186,24 @@
 .night .official-art-frame{background:#dfd4b7;border-color:#97856a}
 .night .official-verse-select{background:#413a31;color:#f9ebcf;border-color:#af946a}
 @media (max-width:390px){.official-verse-select{font-size:11px;min-height:30px}}
+/* v0.8: fixed Hafs vector page + original per-ayah polygon hitmap. */
+.official-reader{height:100%;width:100%;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:0;overflow:hidden}
+.official-art-frame{height:100%;width:100%;display:flex;align-items:center;justify-content:center;min-width:0;min-height:0;overflow:hidden;position:relative;border:3px double #b39a65;border-radius:3px;padding:4px;background:#fff8e7;box-shadow:inset 0 0 0 2px #f6efdc,0 0 0 1px #377654,0 1px 5px #61482315;cursor:default}
+.svg-mount{width:100%;height:100%;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.svg-mount svg.interactive-mushaf-svg{display:block;width:100%;height:100%;max-width:100%;max-height:100%;user-select:none;-webkit-user-select:none;touch-action:pan-y}
+.svg-mount path.ayahPolygon{cursor:pointer;pointer-events:all;fill:transparent;fill-opacity:0;stroke:none;transition:fill-opacity .12s ease}
+.svg-mount path.ayahPolygon.ayah-selected{fill:#c49a4e;fill-opacity:.15}
+.official-loading,.official-missing{max-width:85%;font:15px/1.9 'Amiri Quran',serif;color:#6b5029;text-align:center}
+.night .official-art-frame{background:#e7dcc3;border-color:#ad9266}
+@media(max-width:390px){.official-art-frame{padding:2px;border-width:2px}}
+/* Retain the approved light Islamic floral border without wasting reading area. */
+.official-art-frame{
+  padding:9px;
+  background:
+    url('approved-ornament-h.png') left top/auto 8px repeat-x,
+    url('approved-ornament-h.png') left bottom/auto 8px repeat-x,
+    url('approved-ornament-v.png') left top/8px auto repeat-y,
+    url('approved-ornament-v.png') right top/8px auto repeat-y,
+    #fff8e7;
+}
+@media(max-width:390px){.official-art-frame{padding:7px}}
