@@ -20,7 +20,8 @@
   <section class="audio-bar" id="audioBar" hidden aria-label="مشغل التلاوة">
     <div class="audio-row">
       <button class="icon-btn player-collapse" data-action="closePlayer" aria-label="إغلاق مشغل التلاوة وإيقاف الصوت" title="إغلاق المشغل">×</button>
-      <button class="reciter" data-action="togglePlayer" aria-label="إظهار أو إخفاء تفاصيل مشغل التلاوة" title="إظهار التحكم المتقدم">محمد صديق المنشاوي <span class="player-chevron" aria-hidden="true">⌄</span></button>
+      <button class="reciter" id="reciterButton" data-action="reciterPicker" aria-label="اختيار القارئ" title="اختيار القارئ">محمد صديق المنشاوي <span class="player-chevron" aria-hidden="true">⌄</span></button>
+      <button class="icon-btn mini" data-action="togglePlayer" aria-label="تفاصيل مشغل التلاوة">⌄</button>
       <button class="control" data-action="prevAyah" aria-label="الآية السابقة">❮❮</button>
       <button class="play-main" id="playButton" data-action="playAudio" aria-label="تشغيل">▶</button>
       <button class="control" data-action="nextAyah" aria-label="الآية التالية">❯❯</button>

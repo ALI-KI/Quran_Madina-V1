@@ -33,7 +33,7 @@ class MainActivity : Activity() {
     private lateinit var browser: WebView
     private val workers = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
-    private val activeDownloads = ConcurrentHashMap.newKeySet<Int>()
+    private val activeDownloads = ConcurrentHashMap.newKeySet<String>()
     private val verseCount = intArrayOf(
         7,286,200,176,120,165,206,75,129,109,123,111,43,52,99,128,111,110,98,135,
         112,78,118,64,77,227,93,88,69,60,34,30,73,54,45,83,182,88,75,85,
@@ -70,9 +70,14 @@ class MainActivity : Activity() {
                 if (u.scheme != "https" || u.host != "app.local") return null
                 val path = u.path?.removePrefix("/")?.ifEmpty { "index.html" } ?: "index.html"
                 if (path.startsWith("audio/") && path.endsWith(".mp3")) {
-                    val fileName = path.removePrefix("audio/")
-                    if (!Regex("[0-9]{6}\\.mp3").matches(fileName)) return notFound()
-                    val file = File(audioDir(), fileName)
+                    val rel = path.removePrefix("audio/")
+                    val parts = rel.split("/")
+                    if (parts.size != 2) return notFound()
+                    val source = audioSources[parts[0]] ?: return notFound()
+                    val filename = parts[1]
+                    val matcher = if (source.second) Regex("[0-9]{3}\\.mp3") else Regex("[0-9]{6}\\.mp3")
+                    if (!matcher.matches(filename)) return notFound()
+                    val file = File(audioDir(parts[0]), filename)
                     if (!file.isFile) return notFound()
                     return serveAudio(file, request)
                 }
@@ -84,9 +89,10 @@ class MainActivity : Activity() {
                         path.endsWith(".ttf") -> "font/ttf"
                         path.endsWith(".svg") -> "image/svg+xml"
                         path.endsWith(".png") -> "image/png"
+                        path.endsWith(".webp") -> "image/webp"
                         else -> "text/html"
                     }
-                    WebResourceResponse(mime, if (path.endsWith(".ttf") || path.endsWith(".png")) null else "UTF-8", assets.open(path))
+                    WebResourceResponse(mime, if (path.endsWith(".ttf") || path.endsWith(".png") || path.endsWith(".webp")) null else "UTF-8", assets.open(path))
                 } catch (_: Exception) { notFound() }
             }
         }
@@ -113,8 +119,25 @@ class MainActivity : Activity() {
     }
 
     private fun notFound() = WebResourceResponse("text/plain", "UTF-8", 404, "Not Found", mapOf(), "Not found".byteInputStream())
-    private fun audioDir() = File(filesDir, "audio/minshawy").apply { mkdirs() }
-    private fun audioFile(surah: Int, ayah: Int): File = File(audioDir(), "%03d%03d.mp3".format(surah, ayah))
+    // IDs and hosts are strict allowlists. Never accept a URL from the JavaScript bridge.
+    // Boolean means whole-surah recording rather than verse-by-verse.
+    private val audioSources = mapOf(
+        "minshawy" to Pair("https://everyayah.com/data/Minshawy_Murattal_128kbps/",false),
+        "husary" to Pair("https://everyayah.com/data/Husary_128kbps/",false),
+        "sudais" to Pair("https://everyayah.com/data/Abdurrahmaan_As-Sudais_192kbps/",false),
+        "afasy" to Pair("https://everyayah.com/data/Alafasy_128kbps/",false),
+        "ghamdi" to Pair("https://everyayah.com/data/Ghamadi_40kbps/",false),
+        "maher" to Pair("https://everyayah.com/data/MaherAlMuaiqly128kbps/",false),
+        "ali" to Pair("https://everyayah.com/data/Ali_Jaber_64kbps/",false),
+        "arkani" to Pair("https://cdn.mp3quran.net/audio/abdulwali-arkani/r1/",true)
+    )
+    private fun audioDir(reciter: String) = File(filesDir, "audio/$reciter").apply { mkdirs() }
+    private fun audioFile(reciter: String, surah: Int, ayah: Int): File {
+        val wholeSurah = audioSources[reciter]?.second == true
+        val name = if (wholeSurah) "%03d.mp3".format(java.util.Locale.US,surah)
+                   else "%03d%03d.mp3".format(java.util.Locale.US,surah,ayah)
+        return File(audioDir(reciter),name)
+    }
 
     private fun serveAudio(file: File, request: WebResourceRequest): WebResourceResponse {
         val length = file.length()
@@ -128,46 +151,57 @@ class MainActivity : Activity() {
     }
 
     private inner class QuranAudioBridge {
-        @JavascriptInterface fun hasAudio(surah: Int, ayah: Int): Boolean =
-            surah in 1..114 && ayah in 1..verseCount[surah - 1] && audioFile(surah,ayah).length() > 1024
+        @JavascriptInterface fun hasAudio(reciter: String, surah: Int, ayah: Int): Boolean =
+            audioSources.containsKey(reciter) && surah in 1..114 &&
+            ayah in 1..verseCount[surah - 1] && audioFile(reciter,surah,ayah).length() > 1024
 
-        @JavascriptInterface fun downloadSurah(surah: Int) {
-            if (surah !in 1..114 || !activeDownloads.add(surah)) return
+        @JavascriptInterface fun downloadSurah(reciter: String, surah: Int) {
+            val info = audioSources[reciter] ?: return
+            if (surah !in 1..114) return
+            val key = "$reciter:$surah"
+            if (!activeDownloads.add(key)) return
             workers.execute {
                 var done = 0
                 var failed = 0
-                for (ayah in 1..verseCount[surah-1]) {
-                    if (!hasAudio(surah, ayah)) {
-                        if (!downloadAyah(surah,ayah)) failed++
+                val total = if (info.second) 1 else verseCount[surah - 1]
+                try {
+                    for (ayah in 1..total) {
+                        if (!hasAudio(reciter, surah, ayah) && !downloadAudio(reciter, surah, ayah)) failed++
+                        done++
+                        if (done % 3 == 0 || done == total) {
+                            val script = "window.onNativeDownloadProgress?.('$reciter',$surah,$done,$total);"
+                            mainHandler.post { browser.evaluateJavascript(script, null) }
+                        }
                     }
-                    done++
-                    if (done % 3 == 0 || done==verseCount[surah-1]) {
-                        val progress = "window.onNativeDownloadProgress?.($surah,$done,${verseCount[surah-1]});"
-                        mainHandler.post { browser.evaluateJavascript(progress, null) }
-                    }
+                } finally {
+                    activeDownloads.remove(key)
+                    mainHandler.post { browser.evaluateJavascript("window.onNativeDownloadCompleted?.('$reciter',$surah,$failed);",null) }
                 }
-                activeDownloads.remove(surah)
-                mainHandler.post { browser.evaluateJavascript("window.onNativeDownloadCompleted?.($surah,$failed);",null) }
             }
         }
 
-        private fun downloadAyah(surah: Int, ayah: Int): Boolean {
-            val name = "%03d%03d.mp3".format(surah, ayah)
-            val target = audioFile(surah, ayah)
-            val temp = File(audioDir(), "$name.part")
+        private fun downloadAudio(reciter: String, surah: Int, ayah: Int): Boolean {
+            val source = audioSources[reciter] ?: return false
+            val target = audioFile(reciter,surah,ayah)
+            val temp = File(audioDir(reciter),target.name + ".part")
             return try {
-                val url = URL("https://everyayah.com/data/Minshawy_Murattal_128kbps/$name")
+                val url = URL(source.first + target.name)
                 val conn = (url.openConnection() as HttpURLConnection).apply {
-                    connectTimeout=15000; readTimeout=40000; instanceFollowRedirects=true
-                    setRequestProperty("User-Agent", "MadinaQuran/0.3 (Android Quran Reader)")
+                    connectTimeout = 15000; readTimeout = 40000
+                    instanceFollowRedirects = true
+                    setRequestProperty("User-Agent", "MadinaQuran/0.7 (Android)")
                 }
                 try {
                     if (conn.responseCode !in 200..299) return false
+                    // Prevent an accidental HTML error response being accepted as audio.
+                    val contentType = conn.contentType ?: ""
+                    if (contentType.contains("html",ignoreCase=true)) return false
                     conn.inputStream.use { input -> temp.outputStream().use { output -> input.copyTo(output) } }
                     if (temp.length() < 1024) return false
-                    temp.renameTo(target) || (temp.copyTo(target, overwrite=true).let { true })
-                } finally { conn.disconnect(); temp.delete() }
-            } catch (_: Exception) { temp.delete(); false }
+                    if (!temp.renameTo(target)) temp.copyTo(target,overwrite=true)
+                    target.length() > 1024
+                } finally { conn.disconnect();temp.delete() }
+            } catch (_: Exception) { temp.delete();false }
         }
     }
     @Deprecated("Deprecated in Java")

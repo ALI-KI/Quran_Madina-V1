@@ -1,4 +1,4 @@
-name: Build Quran Android APK
+name: Build Quran Android signed APK (original Mushaf)
 
 on:
   push:
@@ -9,10 +9,10 @@ permissions:
   contents: read
 
 jobs:
-  build-debug-apk:
-    name: Build debug APK
+  signed-release:
+    name: Build fixed-layout Mushaf release APK
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 115
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -21,7 +21,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Install Android SDK
+      - name: Set up Android SDK
         uses: android-actions/setup-android@v4
       - name: Install Android API 35
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
@@ -29,18 +29,96 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
-      - name: Check Quran ranges and Javascript syntax
+      - name: Prepare Python 3.12 for archival Mushaf conversion
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: tools/requirements-mushaf.txt
+      - name: Install KFGQPC artwork conversion tools
         run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends inkscape poppler-utils ghostscript
+          python3 -m pip install -r tools/requirements-mushaf.txt
+      - name: Restore approved Mushaf page render cache
+        id: mushaf-cache
+        uses: actions/cache@v4
+        with:
+          path: app/src/main/assets/mushaf-pages
+          key: kfgqpc-hafs39-mirror-a6f52f8-1200px-webp-q92-rev1
+      - name: Retrieve pinned Quran vector pages (KFGQPC archival mirror)
+        if: steps.mushaf-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none --depth=1 https://github.com/MushafAlMadinahVector/MushafAlMadinahVector.git "$RUNNER_TEMP/mushaf-vector"
+          cd "$RUNNER_TEMP/mushaf-vector"
+          test "$(git rev-parse HEAD)" = "a6f52f8b05fa28cdffb637cbbab0ed30515bbeb2" || { echo '::error::Mushaf mirror changed; refusing to use unreviewed artwork'; exit 1; }
+          test "$(find quran-pages -name '*Hafs39__DM.ai' | wc -l)" -eq 604
+      - name: Render official fixed-layout pages as offline WebP images
+        if: steps.mushaf-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          python3 tools/prepare_mushaf_pages.py \
+            --source "$RUNNER_TEMP/mushaf-vector/quran-pages" \
+            --output app/src/main/assets/mushaf-pages --width 1200 --quality 92 --jobs 3
+      - name: Check all 604 original-layout pages before building
+        run: |
+          python3 tools/check_mushaf_pages.py
           python3 tools/qa_integrity_v05.py
           node --check app/src/main/assets/app.js
-      - name: Build debug APK
-        run: gradle --no-daemon --stacktrace :app:assembleDebug
-      - name: Verify APK
-        run: test -s app/build/outputs/apk/debug/app-debug.apk
-      - name: Upload APK
+      - name: Require stable signing secrets and pinned certificate
+        env:
+          KEYSTORE_B64: ${{ secrets.QURAN_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.QURAN_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.QURAN_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.QURAN_KEY_PASSWORD }}
+          EXPECTED_CERT_SHA256: ${{ vars.QURAN_SIGNING_CERT_SHA256 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in KEYSTORE_B64 STORE_PASSWORD KEY_ALIAS KEY_PASSWORD EXPECTED_CERT_SHA256; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::$name is not configured; refusing to generate a new key; see SIGNING_SETUP_AR.md"
+              exit 1
+            fi
+          done
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/quran-release.jks"
+          chmod 600 "$RUNNER_TEMP/quran-release.jks"
+          test -s "$RUNNER_TEMP/quran-release.jks"
+      - name: Build signed release APK with increasing versionCode
+        env:
+          QURAN_SIGNING_KEYSTORE_PATH: ${{ runner.temp }}/quran-release.jks
+          QURAN_SIGNING_STORE_PASSWORD: ${{ secrets.QURAN_STORE_PASSWORD }}
+          QURAN_SIGNING_KEY_ALIAS: ${{ secrets.QURAN_KEY_ALIAS }}
+          QURAN_SIGNING_KEY_PASSWORD: ${{ secrets.QURAN_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          CODE=$((10000 + GITHUB_RUN_NUMBER))
+          gradle --no-daemon --stacktrace :app:assembleRelease \
+            -PappVersionCode="$CODE" -PappVersionName="0.7.$GITHUB_RUN_NUMBER"
+      - name: Verify signature matches permanent owner-held key
+        env:
+          EXPECTED_CERT_SHA256: ${{ vars.QURAN_SIGNING_CERT_SHA256 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK"
+          APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          "$APKSIGNER" verify --verbose --print-certs "$APK" | tee "$RUNNER_TEMP/apk-cert.txt"
+          ACTUAL=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "$RUNNER_TEMP/apk-cert.txt" | head -1 | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')
+          EXPECTED=$(printf '%s' "$EXPECTED_CERT_SHA256" | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')
+          test -n "$ACTUAL"
+          if [[ "$ACTUAL" != "$EXPECTED" ]]; then echo '::error::Signing certificate mismatch'; exit 1; fi
+      - name: Upload owner-signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: MadinaQuran-debug-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: MadinaQuran-OriginalMushaf-signed-APK
+          path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 30
+      - name: Delete temporary signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/quran-release.jks"
