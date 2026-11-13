@@ -38,14 +38,14 @@ jobs:
       - name: Install KFGQPC artwork conversion tools
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends inkscape poppler-utils ghostscript
+          sudo apt-get install -y --no-install-recommends poppler-utils
           python3 -m pip install -r tools/requirements-mushaf.txt
       - name: Restore approved Mushaf page render cache
         id: mushaf-cache
         uses: actions/cache@v4
         with:
           path: app/src/main/assets/mushaf-pages
-          key: kfgqpc-hafs39-mirror-a6f52f8-1200px-webp-q92-rev1
+          key: kfgqpc-hafs39-mirror-a6f52f8-1200px-webp-q92-poppler-v2
       - name: Retrieve pinned Quran vector pages (KFGQPC archival mirror)
         if: steps.mushaf-cache.outputs.cache-hit != 'true'
         shell: bash
@@ -55,13 +55,13 @@ jobs:
           cd "$RUNNER_TEMP/mushaf-vector"
           test "$(git rev-parse HEAD)" = "a6f52f8b05fa28cdffb637cbbab0ed30515bbeb2" || { echo '::error::Mushaf mirror changed; refusing to use unreviewed artwork'; exit 1; }
           test "$(find quran-pages -name '*Hafs39__DM.ai' | wc -l)" -eq 604
-      - name: Render official fixed-layout pages as offline WebP images
+      - name: Render original PDF-compatible vector pages as offline WebP
         if: steps.mushaf-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
           python3 tools/prepare_mushaf_pages.py \
             --source "$RUNNER_TEMP/mushaf-vector/quran-pages" \
-            --output app/src/main/assets/mushaf-pages --width 1200 --quality 92 --jobs 3
+            --output app/src/main/assets/mushaf-pages --width 1200 --quality 92 --jobs 2
       - name: Check all 604 original-layout pages before building
         run: |
           python3 tools/check_mushaf_pages.py
